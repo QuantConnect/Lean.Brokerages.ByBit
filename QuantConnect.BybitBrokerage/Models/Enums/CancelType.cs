@@ -23,4 +23,5 @@ public enum CancelType
     CancelByCrossSelfMuch,
     CancelByCrossReachMaxTradeNum,
     CancelByDCP,
+    Unknown
 }

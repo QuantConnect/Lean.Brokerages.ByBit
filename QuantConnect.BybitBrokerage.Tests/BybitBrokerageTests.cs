@@ -13,32 +13,66 @@
  * limitations under the License.
 */
 
+using System;
+using Moq;
 using NUnit.Framework;
+using QuantConnect.Brokerages;
+using QuantConnect.BybitBrokerage.Api;
+using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Configuration;
 using QuantConnect.Tests;
 using QuantConnect.Interfaces;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
+using QuantConnect.Tests.Common.Securities;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture, Ignore("Not implemented")]
+    [TestFixture]
     public partial class BybitBrokerageTests : BrokerageTests
     {
-        protected override Symbol Symbol { get; }
+        protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");
+        private BybitRestApiClient _client;
+        protected override Symbol Symbol { get; } = BTCUSDT;
         protected override SecurityType SecurityType { get; }
+
+        protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
-            throw new System.NotImplementedException();
-        }
-        protected override bool IsAsync()
-        {
-            throw new System.NotImplementedException();
+            var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc))
+            {
+                { Symbol, CreateSecurity(Symbol) }
+            };
+
+            var transactions = new SecurityTransactionManager(null, securities);
+            transactions.SetOrderProcessor(new FakeOrderProcessor());
+
+          /*  var algorithm = new Mock<IAlgorithm>();
+            algorithm.Setup(a => a.Transactions).Returns(transactions);
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitFuturesBrokerageModel());
+            algorithm.Setup(a => a.Portfolio)
+                .Returns(new SecurityPortfolioManager(securities, transactions, new AlgorithmSettings()));
+*/
+            var apiKey = Config.Get("bybit-api-key");
+            var apiSecret = Config.Get("bybit-api-secret");
+            var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
+            var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
+
+            _client = new BybitRestApiClient(SymbolMapper, null, apiKey, apiSecret, apiUrl);
+
+            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,
+                new AggregationManager(), null, orderProvider);
         }
 
+        protected override bool IsAsync() => false;
+
         protected override decimal GetAskPrice(Symbol symbol)
-        {
-            throw new System.NotImplementedException();
+        {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
+            return _client.GetTicker(BybitAccountCategory.Linear, brokerageSymbol).Ask1Price;
+
         }
 
 
@@ -49,11 +83,12 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             return new[]
             {
-                new TestCaseData(new MarketOrderTestParameters(Symbols.BTCUSD)).SetName("MarketOrder"),
-                new TestCaseData(new LimitOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("LimitOrder"),
-                new TestCaseData(new StopMarketOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("StopMarketOrder"),
-                new TestCaseData(new StopLimitOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("StopLimitOrder"),
-                new TestCaseData(new LimitIfTouchedOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("LimitIfTouchedOrder")
+                new TestCaseData(new MarketOrderTestParameters(BTCUSDT)).SetName("MarketOrder"),
+                new TestCaseData(new LimitOrderTestParameters(BTCUSDT, 50000m, 10000m)).SetName("LimitOrder"),
+                new TestCaseData(new StopMarketOrderTestParameters(BTCUSDT, 50000m, 10000m)).SetName("StopMarketOrder"),
+                new TestCaseData(new StopLimitOrderTestParameters(BTCUSDT, 50000m, 10000m)).SetName("StopLimitOrder"),
+                new TestCaseData(new LimitIfTouchedOrderTestParameters(BTCUSDT, 50000m, 20000)).SetName(
+                    "LimitIfTouchedOrder")
             };
         }
 
@@ -98,5 +133,6 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             base.LongFromShort(parameters);
         }
+        
     }
 }

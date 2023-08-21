@@ -1,3 +1,5 @@
 {
-  "data-folder": "../../../../Lean/Data/"
+  "data-folder": "../../../../Lean/Data/",
+  "bybit-api-url": "https://api-testnet.bybit.com", 
+  "bybit-websocket-url": "wss://stream-testnet.bybit.com"
 }

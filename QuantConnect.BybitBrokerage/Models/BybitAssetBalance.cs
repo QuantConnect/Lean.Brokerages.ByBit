@@ -2,6 +2,13 @@
 
 namespace QuantConnect.BybitBrokerage.Models;
 
+public class BybitTicker
+{
+    public string Symbol { get; set; }
+    public decimal Ask1Price { get; set; }
+    public decimal LastPrice { get; set; }
+}
+
 /// <summary>
 /// Asset balance info
 /// </summary>

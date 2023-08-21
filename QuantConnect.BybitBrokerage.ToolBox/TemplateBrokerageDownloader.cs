@@ -62,8 +62,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             
             
             if (tickType != TickType.Trade)
-            {
-                return Enumerable.Empty<BaseData>();
+            {  return Enumerable.Empty<BaseData>();
             }
             
 
@@ -85,7 +84,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                 false,
                 false,
                 DataNormalizationMode.Raw,
-                TickType.Trade);
+                tickType);
 
             var data = _brokerage.GetHistory(historyRequest);
             return data;
@@ -129,7 +128,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                     // Download the data
                     var symbol = downloader.GetSymbol(ticker);
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate,
-                        toDate));
+                        toDate, tickType: TickType.Trade));
+                
                     //var bars = data.Cast<TradeBar>().ToList();
 
                     

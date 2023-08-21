@@ -28,6 +28,8 @@ public class BybitArchiveDownloader
     }
     public IEnumerable<BybitHistTick> Download(string symbol, BybitAccountCategory category, DateTime date)
     {
+
+        category = BybitAccountCategory.Linear;
         if (category is not (BybitAccountCategory.Inverse or BybitAccountCategory.Linear))
         {
             throw new NotSupportedException("Only inverse and linear supported");

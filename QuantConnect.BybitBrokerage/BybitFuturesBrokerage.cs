@@ -18,6 +18,7 @@ using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Packets;
+using QuantConnect.Securities;
 using QuantConnect.Securities.Crypto;
 
 namespace QuantConnect.BybitBrokerage
@@ -28,8 +29,23 @@ namespace QuantConnect.BybitBrokerage
     {
         
         
-        public BybitFuturesBrokerage()
+        public BybitFuturesBrokerage(string marketName = Market.Bybit) : base(marketName)
         {
+        }
+        /// <summary>
+        /// Constructor for brokerage
+        /// </summary>
+        /// <param name="apiKey">api key</param>
+        /// <param name="apiSecret">api secret</param>
+        /// <param name="restApiUrl">The rest api url</param>
+        /// <param name="webSocketBaseUrl">The web socket base url</param>
+        /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
+        /// <param name="aggregator">the aggregator for consolidating ticks</param>
+        /// <param name="job">The live job packet</param>
+        public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IDataAggregator aggregator, LiveNodePacket job, IOrderProvider orderProvider) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl,orderProvider, aggregator, job)
+        {
+            
         }
         /// <summary>
         /// Constructor for brokerage

@@ -5,15 +5,21 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.BybitBrokerage.Models.Requests;
 using QuantConnect.Logging;
+using QuantConnect.Orders;
 using QuantConnect.Securities;
+using QuantConnect.Util;
 using RestSharp;
+using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
@@ -25,7 +31,7 @@ public class BybitRestApiClient : IDisposable
         {
             NamingStrategy = new CamelCaseNamingStrategy()
         },
-        Converters = new List<JsonConverter>(){new ByBitKlineJsonConverter()},
+        Converters = new List<JsonConverter>(){new ByBitKlineJsonConverter(), new StringEnumConverter(), new BybitDecimalStringConverter()},
         NullValueHandling = NullValueHandling.Ignore
     };
 
@@ -46,7 +52,8 @@ public class BybitRestApiClient : IDisposable
     /// <param name="securityProvider">The holdings provider.</param>
     /// <param name="apiKey">The Binance API key</param>
     /// <param name="apiSecret">The The Binance API secret</param>
-    /// <param name="restApiUrl">The Binance API rest url</param>
+    /// <param name="restApiUrl">The Bina
+    /// nce API rest url</param>
     public BybitRestApiClient(
         ISymbolMapper symbolMapper,
         ISecurityProvider securityProvider,
@@ -65,14 +72,177 @@ public class BybitRestApiClient : IDisposable
     }
 
 
+    public BybitTicker GetTicker(BybitAccountCategory category, string symbol)
+    {
+        var endpoint = $"{ApiPrefix}/market/tickers";
+        var request = new RestRequest(endpoint);
+        request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
+        request.AddQueryParameter("symbol", symbol);
+
+        var response = ExecuteRequest(request);
+
+        return EnsureSuccessAndParse<BybitPageResult<BybitTicker>>(response).List.Single();
+    }
+
+    public BybitTicker GetTicker(BybitAccountCategory category, Order order)
+    {
+        var symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol);
+        return GetTicker(category, symbol);
+    }
+    
+    public BybitPlaceOrderResponse CancelOrder(BybitAccountCategory category, Order order)
+    {
+        var endpoint = $"{ApiPrefix}/order/cancel";
+        var request = new RestRequest(endpoint, Method.POST);
+
+        var req = new ByBitCancelOrderRequest
+        {
+            Category = category,
+            Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
+            OrderId = order.BrokerId.Single()
+        };
+            
+        var body = JsonConvert.SerializeObject(req, SerializerSettings);
+        request.AddParameter("", body, "application/json", ParameterType.RequestBody);
+        
+        AuthenticateRequest(request);
+        
+        var response  = _restClient.Execute(request);
+        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        return result;
+    }
+
+    public BybitPlaceOrderResponse PlaceOrder(BybitAccountCategory category, Order order)
+    {
+        var endpoint = $"{ApiPrefix}/order/create";
+        var request = new RestRequest(endpoint, Method.POST);
+
+        var placeOrderReq = CreateRequest(category, order);
+        
+
+        var body = JsonConvert.SerializeObject(placeOrderReq, SerializerSettings);
+        request.AddParameter("", body, "application/json", ParameterType.RequestBody);
+        
+        AuthenticateRequest(request);
+
+        var response  = _restClient.Execute(request);
+        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        return result;
+    }
+
+
+    private ByBitPlaceOrderRequest CreateRequest(BybitAccountCategory category,Order order)
+    {
+
+        return CreateRequest<ByBitPlaceOrderRequest>(category, order);
+    }
+
+    private T CreateRequest<T>(BybitAccountCategory category, Order order) where T : ByBitPlaceOrderRequest, new()
+    {
+         if (order.Direction == OrderDirection.Hold) throw new NotSupportedException();
+        var req = new T
+        {
+            Category = category,
+            Side = order.Direction == OrderDirection.Buy ? OrderSide.Buy : OrderSide.Sell,
+            Quantity = Math.Abs(order.Quantity),
+            //OrderLinkId = order.Id.ToStringInvariant(), todo
+            Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
+            PositionIndex = 0
+        };
+        
+        //todo reduce only
+        switch (order)
+        {
+            case LimitOrder limitOrder:
+                req.OrderType = OrderType.Limit;
+                req.Price = limitOrder.LimitPrice;
+                break;
+            case MarketOrder mo:
+                req.OrderType = OrderType.Market;
+            break;
+            case TrailingStopOrder trailingStopOrder:
+                throw new NotImplementedException();
+
+                break;
+            case StopLimitOrder stopLimitOrder:
+                req.OrderType = OrderType.Limit;
+                req.TriggerPrice = stopLimitOrder.StopPrice;
+                req.Price = stopLimitOrder.LimitPrice;
+               //todo req.ReduceOnly = true;
+                var ticker = GetTicker(category,order);
+                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+
+
+                break;
+            case StopMarketOrder stopMarketOrder:
+                req.OrderType = OrderType.Market;
+                req.TriggerPrice = stopMarketOrder.StopPrice;
+               //todo req.ReduceOnly = true;
+                 ticker = GetTicker(category,order);
+                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+                break;
+            case LimitIfTouchedOrder limitIfTouched:
+                req.OrderType = OrderType.Limit;
+                req.TriggerPrice = limitIfTouched.TriggerPrice;
+                req.Price = limitIfTouched.LimitPrice;
+                ticker = GetTicker(category,order);
+                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+
+                break;
+            default: throw new NotSupportedException($"Order type {order.Type.ToStringInvariant()} is not supported");
+        }
+
+        return req;
+    }
+    
     public IEnumerable<BybitOrder> GetOpenOrders(BybitAccountCategory category)
     {
-        return FetchAll(category, FetchOpenOrders);
+        return FetchAll(category, FetchOpenOrders, x => x.List.Length < 50); //todo why is tehre a next page ?
+    }
+
+    public BybitPlaceOrderResponse UpdateOrder(BybitAccountCategory category, Order order)
+    {
+        var endpoint = $"{ApiPrefix}/order/amend";
+
+        var request = new RestRequest(endpoint, Method.POST);
+
+        var placeOrderReq = CreateRequest<ByBitUpdateOrderRequest>(category, order);
+        placeOrderReq.OrderId = order.BrokerId.FirstOrDefault();
+
+        var body = JsonConvert.SerializeObject(placeOrderReq, SerializerSettings);
+        request.AddParameter("", body, "application/json", ParameterType.RequestBody);
+        
+        AuthenticateRequest(request);
+
+        var response  = _restClient.Execute(request);
+        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        return result;
     }
     
     public IEnumerable<BybitInstrumentInfo> GetInstrumentInfo(BybitAccountCategory category)
     {
         return FetchAll(category, FetchInstruementInfo);
+    }
+
+    public IEnumerable<BybitPositionInfo> GetPositions(BybitAccountCategory category)
+    {
+        return FetchAll(category, FetchPositionInfo, result => result.List.Length < 200);
+    }
+    private BybitPageResult<BybitPositionInfo> FetchPositionInfo(BybitAccountCategory category,string cursor = null)
+    {
+        var endpoint = $"{ApiPrefix}/position/list";
+        var request = new RestRequest(endpoint);
+        request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
+        request.AddQueryParameter("settleCoin", "USDT"); //todo
+        request.AddQueryParameter("limit", "200");
+        if (cursor != null)
+        {
+            request.AddQueryParameter("cursor", cursor, false);
+        }
+        
+        AuthenticateRequest(request);
+        var response = ExecuteRequest(request);
+        return EnsureSuccessAndParse<BybitPageResult<BybitPositionInfo>>(response);
     }
 
     public BybitBalance GetWalletBalances(BybitAccountCategory category)
@@ -85,7 +255,7 @@ public class BybitRestApiClient : IDisposable
         AuthenticateRequest(request);
         var response = ExecuteRequest(request);
 
-        var balance =  EnsureSuccessAndParse<BybitBalance>(response);
+        var balance =  EnsureSuccessAndParse<BybitPageResult<BybitBalance>>(response).List.Single();
         return balance;
     }
 
@@ -105,7 +275,7 @@ public class BybitRestApiClient : IDisposable
         return balances;
     }
 
-    private T[] FetchAll<T>(BybitAccountCategory category, Func<BybitAccountCategory, string, BybitPageResult<T>> fetch)
+    private T[] FetchAll<T>(BybitAccountCategory category, Func<BybitAccountCategory, string, BybitPageResult<T>> fetch, Predicate<BybitPageResult<T>> @break  = null)
     {
         var results = new List<T>();
         string cursor = null;
@@ -114,6 +284,7 @@ public class BybitRestApiClient : IDisposable
             var result = fetch(category, cursor);
             results.AddRange(result.List);
             cursor = result.NextPageCursor;
+            if(@break?.Invoke(result) ?? false) break;
         } while (!string.IsNullOrEmpty(cursor));
 
         return results.ToArray();
@@ -164,9 +335,11 @@ public class BybitRestApiClient : IDisposable
     public IEnumerable<ByBitKLine> GetKLines(BybitAccountCategory category,string symbol, Resolution resolution, long from, long to)
     { 
         var msToNextBar = (long) resolution.ToTimeSpan().TotalMilliseconds;
+        var maxTimeSpan = 199 * (long)resolution.ToTimeSpan().TotalMilliseconds;
         while (from < to)
         {
-            var response = FetchKLines(category, symbol, resolution, from, to).Reverse().ToArray();
+            var curTo = from + maxTimeSpan;
+            var response = FetchKLines(category, symbol, resolution, from, curTo).Reverse().ToArray();
             if(response.Length == 0) yield break;
             foreach (var kLine in response)
             {
@@ -207,9 +380,11 @@ public class BybitRestApiClient : IDisposable
 
         request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
         request.AddQueryParameter("limit", "50");
+        request.AddQueryParameter("settleCoin", "USDT");//todo
+       
         if (cursor != null)
         {
-            request.AddQueryParameter("cursor", cursor);
+            request.AddQueryParameter("cursor", "cursor", false);
         }
 
         AuthenticateRequest(request);
@@ -264,25 +439,44 @@ public class BybitRestApiClient : IDisposable
 
     private void AuthenticateRequest(IRestRequest request)
     {
-        var parameters = request.Parameters
-            .Where(x => x.Type is ParameterType.QueryStringWithoutEncode or ParameterType.QueryString)
-            .OrderBy(x => x.Name)
-            .Select(x => $"{x.Name}={x.Value}");
+        string sign;
+        if (request.Method == Method.GET)
+        {
+            var queryParams = request.Parameters
+                .Where(x => x.Type is ParameterType.QueryString or ParameterType.QueryStringWithoutEncode)
+                //.OrderBy(x => x.Name)
+                .Select(x => $"{x.Name}={x.Value}")
+                .ToArray(); //todo do not decode everything
 
-        var queryString = string.Join("&", parameters);
+            sign = string.Join("&", queryParams);
+            
 
+        }else if (request.Method == Method.POST)
+        {
+            var body = request.Parameters.Single(x => x.Type == ParameterType.RequestBody).Value;
+            sign = (string)body;
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+        
         var nonce = GetNonce();
-
-        request.AddHeader("X-BAPI-SIGN", SignQueryString(queryString));
+        var sToSign = $"{nonce}{_apiKey}{sign}";
+        var signed = Sign(sToSign, _hmacsha256);
+        request.AddHeader("X-BAPI-SIGN", signed);
         request.AddHeader("X-BAPI-API-KEY", _apiKey);
-        request.AddHeader("X-BABI-TIMESTAMP", nonce);
+        request.AddHeader("X-BAPI-TIMESTAMP", nonce);
+        request.AddHeader("X-BAPI-SIGN-TYPE", "2");
+
     }
 
-    private string SignQueryString(string queryString)
+    private static string Sign(string queryString, HMACSHA256 hmacsha256)
     {
         var messageBytes = Encoding.UTF8.GetBytes(queryString);
 
-        var computedHash = _hmacsha256.ComputeHash(messageBytes);
+        var computedHash = hmacsha256.ComputeHash(messageBytes);
+        return BitConverter.ToString(computedHash).Replace("-", "").ToLower();
         var hex = new StringBuilder(computedHash.Length * 2);
         foreach (var b in computedHash)
         {
@@ -296,8 +490,25 @@ public class BybitRestApiClient : IDisposable
     {
         return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
     }
-
+    
+    public object AuthenticateWS()
+    {
+        var expires = DateTimeOffset.UtcNow.AddSeconds(10).ToUnixTimeMilliseconds(); //todo amount of seconds
+        var signString = $"GET/realtime{expires}";
+        var signed = Sign(signString, _hmacsha256);
+        return new
+        {
+            op = "auth",
+            args = new object[]
+            {
+                _apiKey,
+                expires,
+                signed
+            }
+        };
+    }
     public void Dispose()
     {
+        _hmacsha256.Dispose();
     }
 }

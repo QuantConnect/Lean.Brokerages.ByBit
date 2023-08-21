@@ -4,5 +4,6 @@ public enum TriggerType
 {
     LastPrice,
     IndexPrice,
-    MarkPrice
+    MarkPrice,
+    Unknown
 }

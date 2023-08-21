@@ -1,10 +1,16 @@
 ﻿using Newtonsoft.Json;
+using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models.Enums;
 
 namespace QuantConnect.BybitBrokerage.Models.Requests;
 
+public class ByBitUpdateOrderRequest : ByBitPlaceOrderRequest
+{
+    public string OrderId { get; set; }
+}
 public class ByBitPlaceOrderRequest
 {
+    public int TriggerDirection { get; set; }
     public BybitAccountCategory Category { get; set; }
     public string Symbol { get; set; }
 
@@ -16,17 +22,21 @@ public class ByBitPlaceOrderRequest
     /// <summary>
     /// Order type
     /// </summary>
-    public OrderType Type { get; set; }
+    public OrderType OrderType { get; set; }
 
     /// <summary>
     /// Order price
     /// </summary>
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal? Price { get; set; }
 
     /// <summary>
     /// Order quantity
     /// </summary>
     [JsonProperty("qty")]
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal Quantity { get; set; }
 
     /// <summary>
@@ -35,7 +45,10 @@ public class ByBitPlaceOrderRequest
     [JsonProperty("time_in_force")]
     public TimeInForce? TimeInForce { get; set; }
 
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
     public decimal? BasePrice { get; set; }
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal? TriggerPrice { get; set; }
     public TriggerType? TriggerBy { get; set; }
 
@@ -44,6 +57,8 @@ public class ByBitPlaceOrderRequest
     /// Implied volatility, for options only; parameters are passed according to the real value; for example, for 10%, 0.1 is passed.
     /// </summary>
     [JsonProperty("orderlv")]
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal? OrderLv { get; set; }
 
     /// <summary>
@@ -56,12 +71,17 @@ public class ByBitPlaceOrderRequest
     /// <summary>
     /// Take-profit price, only valid when positions are opened.
     /// </summary>
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal? TakeProfit { get; set; }
 
     /// <summary>
     /// Stop-loss price, only valid when positions are opened.
 
     /// </summary>
+    ///     [JsonConverter(typeof(BybitDecimalStringConverter))]
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+
     public decimal? StopLoss { get; set; }
 
     /// <summary>
@@ -77,6 +97,19 @@ public class ByBitPlaceOrderRequest
     public bool? ReduceOnly { get; set; }
     public bool? CloseOnTrigger { get; set; }
     public bool? Mmp { get; set; }
+    
+    [JsonProperty("positionIdx")]
+    public int? PositionIndex
+    {
+        get;
+        set;
+    }
 
 
+}
+
+public class BybitPlaceOrderResponse
+{
+    public string OrderId { get; set; }
+    public string OrderLinkId { get; set; }
 }
