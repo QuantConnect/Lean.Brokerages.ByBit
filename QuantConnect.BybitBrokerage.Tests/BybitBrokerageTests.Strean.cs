@@ -23,7 +23,7 @@ using QuantConnect.Data.Market;
 namespace QuantConnect.BybitBrokerage.Tests
 {
     [TestFixture]
-    public partial class BybitBrokerageTests
+    public partial class BybitFuturesBrokerageTests
     {
         private static TestCaseData[] TestParameters
         {

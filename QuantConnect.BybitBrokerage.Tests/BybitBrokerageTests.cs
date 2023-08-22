@@ -31,7 +31,7 @@ using QuantConnect.Tests.Common.Securities;
 namespace QuantConnect.BybitBrokerage.Tests
 {
     [TestFixture]
-    public partial class BybitBrokerageTests : BrokerageTests
+    public partial class BybitFuturesBrokerageTests : BrokerageTests
     {
         protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");
         private BybitRestApiClient _client;
@@ -47,8 +47,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 { Symbol, CreateSecurity(Symbol) }
             };
 
-            var transactions = new SecurityTransactionManager(null, securities);
-            transactions.SetOrderProcessor(new FakeOrderProcessor());
+            //var transactions = new SecurityTransactionManager(null, securities);
+            //transactions.SetOrderProcessor(new FakeOrderProcessor());
 
           /*  var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
@@ -63,8 +63,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             _client = new BybitRestApiClient(SymbolMapper, null, apiKey, apiSecret, apiUrl);
 
-            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,
-                new AggregationManager(), null, orderProvider);
+            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, new AggregationManager(), null, orderProvider);
         }
 
         protected override bool IsAsync() => false;

@@ -38,6 +38,7 @@ public partial class BybitBrokerage
                 if (item.StopOrderType == StopOrderType.TrailingStop)
                 {
                     throw new NotImplementedException();
+                    //todo implement trailing
                 }
 
                 order = item.OrderType == OrderType.Limit
@@ -160,6 +161,12 @@ public partial class BybitBrokerage
             return false;
         }
 
+        if (order.Status == OrderStatus.Filled || order.Type == Orders.OrderType.Market) //todo can cancel
+        {
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning,-1,"Order already filled"));
+            return false;
+        }
+        
         var canceled = false;
         _messageHandler.WithLockedStream(() => { 
         ApiClient.CancelOrder(Category, order);

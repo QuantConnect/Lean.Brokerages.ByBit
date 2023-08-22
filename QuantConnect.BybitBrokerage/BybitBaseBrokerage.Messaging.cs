@@ -19,7 +19,6 @@ using OrderStatus = QuantConnect.BybitBrokerage.Models.Enums.OrderStatus;
 
 namespace QuantConnect.BybitBrokerage;
 
-//todo messaging
 public partial class BybitBrokerage
 {
 
@@ -63,19 +62,32 @@ public partial class BybitBrokerage
                 foreach (var order in orders)
                 {
 
-                    var leanOrders = OrderProvider.GetOrdersByBrokerageId(order.OrderId).ToArray();
-                    var leanOrder = leanOrders.FirstOrDefault();
-                    if(leanOrder == null) continue;
-                    
-                    if (order.Status == OrderStatus.Filled)
+                    var leanOrders = OrderProvider.GetOrdersByBrokerageId(order.OrderId).ToArray().Take(1);
+                    foreach (var leanOrder in leanOrders)
                     {
-                        var fee = new OrderFee(new CashAmount(order.ExecutedFee ?? 0, "USDT"));
-                        var @event = new OrderEvent(leanOrder.Id,leanOrder.Symbol,DateTime.UtcNow,Orders.OrderStatus.Filled, leanOrder.Direction, order.Price ?? 0,order.QuantityFilled ?? 0, fee);
-                        OnOrderEvent(@event);
-                    }
-                    else
-                    {
-                        Log.Trace(e.Message);
+                        //todo why multiplied orders here? var leanOrder = leanOrders.FirstOrDefault;
+                        // test orderprovider is cloning orders, therefore the market order test never is filled and waits for an event which already fired
+                        if (leanOrder == null) continue;
+
+                        if (order.Status == OrderStatus.Filled)
+                        {
+                            leanOrder.Status = Orders.OrderStatus.Filled;
+                            var fee = new OrderFee(new CashAmount(order.ExecutedFee ?? 0, "USDT"));
+                            var @event = new OrderEvent(leanOrder.Id, leanOrder.Symbol, DateTime.UtcNow,
+                                Orders.OrderStatus.Filled, leanOrder.Direction, order.Price ?? 0,
+                                order.QuantityFilled ?? 0, fee);
+                            OnOrderEvent(@event);
+                        }
+                        else if (order.Status is OrderStatus.Cancelled or OrderStatus.Deactivated)
+                        {
+                            leanOrder.Status = Orders.OrderStatus.Canceled;
+                            OnOrderEvent(new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero)
+                                { Status = Orders.OrderStatus.Canceled });
+                        }
+                        else
+                        {
+                            Log.Trace(e.Message);
+                        }
                     }
                 }
             }

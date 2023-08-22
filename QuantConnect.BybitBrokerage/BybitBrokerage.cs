@@ -130,8 +130,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         var privateWssURl = $"{wssUrl}/v5/private";
         wssUrl += $"/v5/public/{Category.ToStringInvariant().ToLowerInvariant()}";
 
-        //todo why here?
 
+        //todo cleanup ws urls
         base.Initialize(privateWssURl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
 
         _job = job;
@@ -164,7 +164,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             // 20 seconds
             Interval = 20 * 1000,
         };
-        _keepAliveTimer.Elapsed += (_, _) => Send(WebSocket, new { op = "ping" }); //todo
+        _keepAliveTimer.Elapsed += (_, _) => Send(WebSocket, new { op = "ping" }); 
 
         WebSocket.Open += (s, e) =>
         {
@@ -232,8 +232,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         if (request.Resolution == Resolution.Tick)
         {
-            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc,
-                request.EndTimeUtc); //todo end
+            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc, request.EndTimeUtc); 
             foreach (var tick in res)
             {
                 yield return new Tick(tick.Time, request.Symbol, string.Empty, Exchange.Bybit,

@@ -197,7 +197,7 @@ public class BybitRestApiClient : IDisposable
     
     public IEnumerable<BybitOrder> GetOpenOrders(BybitAccountCategory category)
     {
-        return FetchAll(category, FetchOpenOrders, x => x.List.Length < 50); //todo why is tehre a next page ?
+        return FetchAll(category, FetchOpenOrders, x => x.List.Length < 50); //todo why is there a next page in the first place.... double check API
     }
 
     public BybitPlaceOrderResponse UpdateOrder(BybitAccountCategory category, Order order)
@@ -380,7 +380,7 @@ public class BybitRestApiClient : IDisposable
 
         request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
         request.AddQueryParameter("limit", "50");
-        request.AddQueryParameter("settleCoin", "USDT");//todo
+        request.AddQueryParameter("settleCoin", "USDT");//todo 
        
         if (cursor != null)
         {
