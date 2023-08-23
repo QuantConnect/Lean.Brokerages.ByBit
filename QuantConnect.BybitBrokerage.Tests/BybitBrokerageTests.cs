@@ -31,12 +31,12 @@ using QuantConnect.Tests.Common.Securities;
 namespace QuantConnect.BybitBrokerage.Tests
 {
     [TestFixture]
-    public partial class BybitFuturesBrokerageTests : BrokerageTests
+    public partial class BybitBrokerageTests : BrokerageTests
     {
-        protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");
-        private BybitRestApiClient _client;
+        protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.Crypto, "bybit");
+        private BybitApi _client;
         protected override Symbol Symbol { get; } = BTCUSDT;
-        protected override SecurityType SecurityType { get; }
+        protected override SecurityType SecurityType => SecurityType.Crypto;
 
         protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
 
@@ -61,16 +61,21 @@ namespace QuantConnect.BybitBrokerage.Tests
             var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
-            _client = new BybitRestApiClient(SymbolMapper, null, apiKey, apiSecret, apiUrl);
-
-            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, new AggregationManager(), null, orderProvider);
+            _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,orderProvider, new AggregationManager(), null);
         }
 
+        protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
+        {
+           return new BybitApi(SymbolMapper, apiKey, apiSecret, apiUrl);
+        }
+        
+        
         protected override bool IsAsync() => false;
 
         protected override decimal GetAskPrice(Symbol symbol)
         {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
-            return _client.GetTicker(BybitAccountCategory.Linear, brokerageSymbol).Ask1Price;
+            return _client.Market.GetTicker(BybitAccountCategory.Spot, brokerageSymbol).Ask1Price!.Value;
 
         }
 

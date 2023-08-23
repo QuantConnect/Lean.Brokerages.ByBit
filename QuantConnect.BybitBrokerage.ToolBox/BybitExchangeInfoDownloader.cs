@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using QLNet;
 using QuantConnect.BybitBrokerage.Api;
+using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
 
@@ -41,18 +42,31 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         public IEnumerable<string> Get()
         {
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
-            var client = new BybitRestApiClient(null, null, null, null, apiUrl);
+            using var client = new BybitApi(null, null, null, apiUrl);
 
-            var linear = client.GetInstrumentInfo(BybitAccountCategory.Linear);
-            var inverse = client.GetInstrumentInfo(BybitAccountCategory.Inverse);
+            var linear = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
+            var inverse = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
+            var spot = (SecurityType.Crypto, client.Market.GetInstrumentInfo(BybitAccountCategory.Spot));
 
-            foreach (var symbol in linear.Concat(inverse))
+            foreach (var symbolSource in new[] { linear, inverse, spot })
             {
-                if(!symbol.UnifiedMarginTrade) continue;
-                if(!symbol.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase))continue;
-                yield return
-                    $"{Market.ToLowerInvariant()},{symbol.Symbol},cryptofuture,{symbol.Symbol},{symbol.QuoteCoin},1,{symbol.PriceFilter.TickSize},{symbol.LotSizeFilter.QuantityStep},{symbol.Symbol},{symbol.LotSizeFilter.MinOrderQuantity}";
+                foreach (var symbol in symbolSource.Item2)
+                {
+                    //if (!symbol.UnifiedMarginTrade) continue;
+                    if (!symbol.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase)) continue;
+                    yield return GetInstrumentInfoString(symbol, symbolSource.Item1);
+                }
             }
+        }
+
+
+        private string GetInstrumentInfoString(BybitInstrumentInfo info, SecurityType securityType)
+        {
+            var securityTypeStr = securityType.ToStringInvariant().ToLowerInvariant();
+            //market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier
+            //todo what's price scale and magnifier?
+            return
+                $"{Market.ToLowerInvariant()},{info.Symbol},{securityTypeStr},{info.Symbol},{info.QuoteCoin},1,{info.PriceFilter.TickSize},{info.LotSizeFilter.QuantityStep ?? info.LotSizeFilter.BasePrecision},{info.Symbol},{info.LotSizeFilter.MinOrderQuantity}";
         }
     }
 }

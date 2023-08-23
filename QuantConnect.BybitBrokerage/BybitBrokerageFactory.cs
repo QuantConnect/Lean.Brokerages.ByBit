@@ -82,24 +82,13 @@ namespace QuantConnect.BybitBrokerage
                 // if we had errors then we can't create the instance
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
-            /*
-            var brokerage = new BybitBrokerage(
-                apiKey,
-                apiSecret,
-                apiUrl,
-                wsUrl,
-                algorithm,
-                Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"), forceTypeNameOnExisting: false),
-                job);
-            
-            Composer.Instance.AddPart(brokerage);
-            return brokerage;
-*/
             var agg = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
 
-            return CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl);
+            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl);
+            Composer.Instance.AddPart(brokerage);
+            return brokerage;
         }
 
         protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm, IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl)

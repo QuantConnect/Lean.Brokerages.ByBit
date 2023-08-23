@@ -24,14 +24,12 @@ public partial class BybitBrokerage
     /// <returns>The open orders returned from IB</returns>
     public override List<Order> GetOpenOrders()
     {
-        var orders = ApiClient.GetOpenOrders(Category);
+        var orders = ApiClient.Trade.GetOpenOrders(Category);
 
         var mapped = orders.Select(item =>
         {
             var symbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.CryptoFuture, Market.Bybit);
             var price = item.Price!.Value;
-
-
             Order order;
             if (item.StopOrderType != null)
             {
@@ -53,8 +51,7 @@ public partial class BybitBrokerage
             }
 
             order.BrokerId.Add(item.OrderId);
-            //todo order.Status=
-            // todo order.Id = item.ClientOrderId
+            order.Status = ConvertOrderStatus(item.Status);
             return order;
         });
         return mapped.ToList();
@@ -66,14 +63,14 @@ public partial class BybitBrokerage
     /// <returns>The current holdings from the account</returns>
     public override List<Holding> GetAccountHoldings()
     {
-        var holdings =  ApiClient.GetPositions(Category)
+        var holdings =  ApiClient.Position.GetPositions(Category)
             .Select(x =>
             {
                 return new Holding()
                 {
                     Symbol = _symbolMapper.GetLeanSymbol(x.Symbol, GetSupportedSecurityType(), MarketName),
                     AveragePrice = x.AveragePrice,
-                    Quantity = x.Side == Models.PositionSide.Buy ? x.Size : x.Size * -1,
+                    Quantity = x.Side == Models.Enums.PositionSide.Buy ? x.Size : x.Size * -1,
                     MarketValue = x.PositionValue,
                     UnrealizedPnL = x.UnrealisedPnl,
                     MarketPrice = x.MarkPrice
@@ -88,7 +85,7 @@ public partial class BybitBrokerage
     /// <returns>The current cash balance for each currency available for trading</returns>
     public override List<CashAmount> GetCashBalance()
     {
-        return ApiClient.GetWalletBalances(Category).Assets.Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
+        return ApiClient.Account.GetWalletBalances(Category).Assets.Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
         //return new List<CashAmount>();
 
     }
@@ -109,11 +106,10 @@ public partial class BybitBrokerage
         
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.PlaceOrder(Category, order);
+            var result = ApiClient.Trade.PlaceOrder(Category, order);
             order.BrokerId.Add(result.OrderId);
-            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event"){Status = OrderStatus.Submitted});
+            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event"){Status = OrderStatus.Submitted}); //todo is zero fees okay here? We only know about fees when the order is executed
             submitted = true;
-            //OnOrderIdChangedEvent(new BrokerageOrderIdChangedEvent(){BrokerId = cachedOrder.BrokerId, OrderId = order.Id});
         });
         
         return submitted;
@@ -137,8 +133,8 @@ public partial class BybitBrokerage
         
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.UpdateOrder(Category, order);
-            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event"){Status = OrderStatus.UpdateSubmitted}); //todo fee
+            var result = ApiClient.Trade.UpdateOrder(Category, order);
+            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event"){Status = OrderStatus.UpdateSubmitted}); //todo is zero fees okay here? We only know about fees when the order is executed
             submitted = true;
             //OnOrderIdChangedEvent(new BrokerageOrderIdChangedEvent(){BrokerId = cachedOrder.BrokerId, OrderId = order.Id});
         });
@@ -169,7 +165,7 @@ public partial class BybitBrokerage
         
         var canceled = false;
         _messageHandler.WithLockedStream(() => { 
-        ApiClient.CancelOrder(Category, order);
+        ApiClient.Trade.CancelOrder(Category, order);
         OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero) { Status = OrderStatus.CancelPending });
         canceled = true;
         });
@@ -196,7 +192,7 @@ public partial class BybitBrokerage
            
         //todo reconnect
         if(WebSocket == null) return;
-        WebSocket.Initialize(_webSocketBaseUrl);
+        WebSocket.Initialize(_privateWebSocketUrl);
         ConnectSync();
     }
 

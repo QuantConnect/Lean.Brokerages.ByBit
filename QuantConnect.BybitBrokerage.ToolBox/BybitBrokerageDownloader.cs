@@ -54,6 +54,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         /// <returns>Enumerable of base data for this symbol</returns>
         public IEnumerable<BaseData> Get(DataDownloaderGetParameters dataDownloaderGetParameters)
         {
+            //todo spot vs futures
+            
             var symbol = dataDownloaderGetParameters.Symbol;
             var resolution = dataDownloaderGetParameters.Resolution;
             var startUtc = dataDownloaderGetParameters.StartUtc;

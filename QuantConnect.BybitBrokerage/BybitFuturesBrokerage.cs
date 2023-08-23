@@ -20,6 +20,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Securities.Crypto;
+using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage
 {
@@ -63,12 +64,21 @@ namespace QuantConnect.BybitBrokerage
         {
             
         }
-        
+
         protected override BybitAccountCategory Category => BybitAccountCategory.Linear;
 
         protected override SecurityType GetSupportedSecurityType()
         {
             return SecurityType.CryptoFuture;
+        }
+
+        protected override bool CanSubscribe(Symbol symbol)
+        {
+            if (!base.CanSubscribe(symbol)) return false;
+            
+            //Can only subscribe to non-inverse pairs
+            return CurrencyPairUtil.TryDecomposeCurrencyPair(symbol, out _, out var quoteCurrency) &&
+                   quoteCurrency == "USDT";
         }
     }
 }

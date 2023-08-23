@@ -61,7 +61,7 @@ public partial class BybitBrokerage
     protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
     {
         Initialize(
-            wssUrl: job.BrokerageData["bybit-websocket-url"],
+            baseWssUrl: job.BrokerageData["bybit-websocket-url"],
             restApiUrl: job.BrokerageData["bybit-api-url"],
             apiKey: job.BrokerageData["bybit-api-key"],
             apiSecret: job.BrokerageData["bybit-api-secret"],

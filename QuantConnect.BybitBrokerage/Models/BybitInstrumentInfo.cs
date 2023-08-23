@@ -15,7 +15,7 @@ public class BybitInstrumentInfo
     public string LaunchTime { get; set; }
     public string DeliveryTime { get; set; }
     public string? DeliveryFeeRate { get; set; }
-    public string PriceScale { get; set; }
+    public string? PriceScale { get; set; }
     public ByBitPriceFilter PriceFilter { get; set; }
     public ByBitLotSizeFilter LotSizeFilter { get; set; }
     public ByBitLeverageFilter LeverageFilter { get; set; }

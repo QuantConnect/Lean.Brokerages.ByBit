@@ -14,6 +14,7 @@ using QuantConnect.Securities;
 using QuantConnect.Statistics;
 using QuantConnect.Util;
 using HistoryRequest = QuantConnect.Data.HistoryRequest;
+using OrderStatus = QuantConnect.Orders.OrderStatus;
 using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
 using Timer = System.Timers.Timer;
 
@@ -25,7 +26,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private IAlgorithm _algorithm;
     private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
     private LiveNodePacket _job;
-    private string _webSocketBaseUrl;
+    private string _privateWebSocketUrl;
     private Timer _keepAliveTimer;
 
     //private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
@@ -33,7 +34,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
     protected string MarketName { get; set; }
-    protected BybitRestApiClient ApiClient { get; set; }
+    protected BybitApi ApiClient { get; set; }
     protected IOrderProvider OrderProvider { get; private set; }
     protected virtual BybitAccountCategory Category => BybitAccountCategory.Spot;
 
@@ -56,7 +57,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
     }
 
-    
+
     /// <summary>
     /// Constructor for brokerage
     /// </summary>
@@ -68,10 +69,11 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Actual market name</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-       IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName = Market.Bybit)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null, aggregator,job,  orderProvider, marketName)
+        IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName = Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null, aggregator, job, orderProvider, marketName)
     {
     }
+
     /// <summary>
     /// Constructor for brokerage
     /// </summary>
@@ -84,7 +86,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job,algorithm?.Portfolio?.Transactions, Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job,
+            algorithm?.Portfolio?.Transactions, Market.Bybit)
     {
     }
 
@@ -119,92 +122,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     }
 
 
-    protected void Initialize(string wssUrl, string restApiUrl, string apiKey, string apiSecret,
-        IAlgorithm algorithm,IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName)
-    {
-        if (IsInitialized)
-        {
-            return;
-        }
-
-        var privateWssURl = $"{wssUrl}/v5/private";
-        wssUrl += $"/v5/public/{Category.ToStringInvariant().ToLowerInvariant()}";
-
-
-        //todo cleanup ws urls
-        base.Initialize(privateWssURl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
-
-        _job = job;
-        _algorithm = algorithm;
-        _aggregator = aggregator;
-        _webSocketBaseUrl = privateWssURl;
-        _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
-        _symbolMapper = new(marketName);
-        OrderProvider = orderProvider;
-        MarketName = marketName;
-
-        
-        // todo send ping for public 
-        var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(wssUrl,
-            100,
-            100,
-            new Dictionary<Symbol, int>(),
-            () => new BybitWebSocketWrapper(null),
-            Subscribe,
-            Unsubscribe,
-            OnDataMessage,
-            TimeSpan.FromDays(1));
-
-
-        SubscriptionManager = subscriptionManager;
-        ApiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret);
-
-        _keepAliveTimer = new()
-        {
-            // 20 seconds
-            Interval = 20 * 1000,
-        };
-        _keepAliveTimer.Elapsed += (_, _) => Send(WebSocket, new { op = "ping" }); 
-
-        WebSocket.Open += (s, e) =>
-        {
-            _keepAliveTimer.Start();
-            Send(WebSocket,ApiClient.AuthenticateWS());
-            Send(WebSocket, new{op="subscribe",args = new[]{"order"}});
-        };
-        
-        WebSocket.Closed += (s, e) =>
-        {
-            _keepAliveTimer.Stop();
-        };
-
-        //ValidateSubscription(); todo
-    }
-
-    private bool CanSubscribe(Symbol symbol)
-    {
-        return !symbol.Value.Contains("UNIVERSE") &&
-               symbol.SecurityType == GetSupportedSecurityType() &&
-               symbol.ID.Market == MarketName;
-    }
-
-    protected virtual SecurityType GetSupportedSecurityType()
-    {
-        return SecurityType.Crypto;
-    }
-
-
-    /// <summary>
-    /// Adds the specified symbols to the subscription
-    /// </summary>
-    /// <param name="symbols">The symbols to be added keyed by SecurityType</param>
-    protected override bool Subscribe(IEnumerable<Symbol> symbols)
-    {
-        // NOP
-        return true;
-    }
-
-
     public override IEnumerable<BaseData> GetHistory(HistoryRequest request)
     {
         if (!_symbolMapper.IsKnownLeanSymbol(request.Symbol))
@@ -232,7 +149,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         if (request.Resolution == Resolution.Tick)
         {
-            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc, request.EndTimeUtc); 
+            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc,
+                request.EndTimeUtc);
             foreach (var tick in res)
             {
                 yield return new Tick(tick.Time, request.Symbol, string.Empty, Exchange.Bybit,
@@ -242,10 +160,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             yield break;
         }
 
-        var client = ApiClient ?? GetApiClient(_symbolMapper, null,
-            Config.Get("bybit-api-url", "https://api.bybit.com"), null, null);
+        var client = ApiClient ??
+                     GetApiClient(_symbolMapper, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null);
 
-        var kLines = client
+        var kLines = client.Market
             .GetKLines(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
 
         var periodTimeSpan = request.Resolution.ToTimeSpan();
@@ -257,19 +175,130 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
     }
 
-    protected virtual BybitRestApiClient GetApiClient(ISymbolMapper symbolMapper,
-        ISecurityProvider securityProvider, string restApiUrl, string apiKey, string apiSecret)
+    protected void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
+        IAlgorithm algorithm, IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job,
+        string marketName)
+    {
+        if (IsInitialized)
+        {
+            return;
+        }
+
+        _privateWebSocketUrl = $"{baseWssUrl}/v5/private";
+        var publicWssUrl = $"{baseWssUrl}/v5/public/{Category.ToStringInvariant().ToLowerInvariant()}";
+
+        base.Initialize(_privateWebSocketUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
+
+        _job = job;
+        _algorithm = algorithm;
+        _aggregator = aggregator;
+        _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
+        _symbolMapper = new(marketName);
+        OrderProvider = orderProvider;
+        MarketName = marketName;
+
+
+        // todo send ping for public 
+        var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(publicWssUrl,
+            100,
+            100,
+            new Dictionary<Symbol, int>(),
+            () => new BybitWebSocketWrapper(null),
+            Subscribe,
+            Unsubscribe,
+            OnDataMessage,
+            TimeSpan.FromDays(1));
+
+
+        SubscriptionManager = subscriptionManager;
+        ApiClient = GetApiClient(_symbolMapper, restApiUrl, apiKey, apiSecret);
+
+        _keepAliveTimer = new()
+        {
+            // 20 seconds
+            Interval = 20 * 1000,
+        };
+        _keepAliveTimer.Elapsed += (_, _) => Send(WebSocket, new { op = "ping" });
+
+        WebSocket.Open += (s, e) =>
+        {
+            _keepAliveTimer.Start();
+            Send(WebSocket, ApiClient.AuthenticateWebSocket());
+            Send(WebSocket, new { op = "subscribe", args = new[] { "order" } });
+        };
+
+        WebSocket.Closed += (s, e) => { _keepAliveTimer.Stop(); };
+
+        //todo ValidateSubscription(); 
+    }
+
+    protected virtual bool CanSubscribe(Symbol symbol)
+    {
+        return !symbol.Value.Contains("UNIVERSE") &&
+               symbol.SecurityType == GetSupportedSecurityType() &&
+               symbol.ID.Market == MarketName;
+    }
+
+    protected virtual SecurityType GetSupportedSecurityType()
+    {
+        return SecurityType.Crypto;
+    }
+
+
+    /// <summary>
+    /// Adds the specified symbols to the subscription
+    /// </summary>
+    /// <param name="symbols">The symbols to be added keyed by SecurityType</param>
+    protected override bool Subscribe(IEnumerable<Symbol> symbols)
+    {
+        // NOP
+        return true;
+    }
+    
+    protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, string restApiUrl, string apiKey, string apiSecret)
     {
         var url = Config.Get("bybit-api-url", "https://api.bybit.com");
-        return new BybitRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
+        return new BybitApi(symbolMapper, apiKey, apiSecret, restApiUrl);
     }
 
     public override void Dispose()
     {
         _keepAliveTimer.DisposeSafely();
         _webSocketRateLimiter.DisposeSafely();
+
         SubscriptionManager.DisposeSafely();
+        ApiClient.DisposeSafely();
+
 
         base.Dispose();
+    }
+
+    public static OrderStatus ConvertOrderStatus(Models.Enums.OrderStatus orderStatus)
+    {
+        switch (orderStatus)
+        {
+            case Models.Enums.OrderStatus.Created:
+            case Models.Enums.OrderStatus.New:
+            case Models.Enums.OrderStatus.Untriggered:
+            case Models.Enums.OrderStatus.Triggered:
+            case Models.Enums.OrderStatus.Active:
+                return OrderStatus.New;
+            case Models.Enums.OrderStatus.PartiallyFilled:
+                return OrderStatus.PartiallyFilled;
+            case Models.Enums.OrderStatus.Filled:
+                return OrderStatus.Filled;
+            case Models.Enums.OrderStatus.Cancelled:           
+            case Models.Enums.OrderStatus.Deactivated:
+            case Models.Enums.OrderStatus.PartiallyFilledCanceled:
+                return OrderStatus.Canceled;
+            case Models.Enums.OrderStatus.Rejected:
+                return OrderStatus.Invalid;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(orderStatus), orderStatus, null);
+        }
+
+        {
+            
+        }
     }
 }

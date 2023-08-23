@@ -4,10 +4,6 @@ using QuantConnect.BybitBrokerage.Models.Enums;
 
 namespace QuantConnect.BybitBrokerage.Models.Requests;
 
-public class ByBitUpdateOrderRequest : ByBitPlaceOrderRequest
-{
-    public string OrderId { get; set; }
-}
 public class ByBitPlaceOrderRequest
 {
     public int TriggerDirection { get; set; }
@@ -106,10 +102,4 @@ public class ByBitPlaceOrderRequest
     }
 
 
-}
-
-public class BybitPlaceOrderResponse
-{
-    public string OrderId { get; set; }
-    public string OrderLinkId { get; set; }
 }

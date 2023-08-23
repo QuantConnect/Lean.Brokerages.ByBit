@@ -29,9 +29,8 @@ using QuantConnect.Lean.Engine.HistoricalData;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    
     [TestFixture]
-    public class BybitBrokerageHistoryProviderTests
+    public class BybitFuturesBrokerageHistoryProviderTests
     {
         private Brokerage _brokerage;
 
@@ -40,24 +39,29 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             _brokerage = CreateBrokerage();
         }
+
         [OneTimeTearDown]
         public void TearDown()
         {
             _brokerage?.Disconnect();
             _brokerage?.Dispose();
         }
-        
-               private static TestCaseData[] ValidHistory
+
+        private static TestCaseData[] ValidHistory
         {
             get
             {
                 return new[]
                 {
                     // valid
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick, Time.OneMinute, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Minute, Time.OneHour, TickType.Trade,false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Hour, Time.OneDay, TickType.Trade,false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily, TimeSpan.FromDays(15),TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick,
+                        Time.OneMinute, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
+                        Resolution.Minute, Time.OneHour, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Hour,
+                        Time.OneDay, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
+                        Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                 };
             }
         }
@@ -68,9 +72,12 @@ namespace QuantConnect.BybitBrokerage.Tests
             {
                 return new[]
                 {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Minute, Time.OneHour, TickType.Quote),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick,
+                        TimeSpan.FromSeconds(15), TickType.Trade),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
+                        Resolution.Second, Time.OneMinute, TickType.Trade),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
+                        Resolution.Minute, Time.OneHour, TickType.Quote),
                 };
             }
         }
@@ -85,28 +92,29 @@ namespace QuantConnect.BybitBrokerage.Tests
                     new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), false),
 
                     // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
-                    new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily, TimeSpan.FromDays(15), true),
+                    new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily,
+                        TimeSpan.FromDays(15), true),
 
                     // invalid security type, throws "System.ArgumentException : Invalid security type: Equity"
                     new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), false),
                 };
             }
         }
-       
+
 
         [Test, TestCaseSource(nameof(ValidHistory))]
-        public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool throwsException)
+        public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,
+            bool throwsException)
         {
             TestDelegate test = () =>
             {
-
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(_brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
                     null, null, null, null,
                     false, new DataPermissionManager()));
 
-                var marketHoursDatabase = MarketHoursDatabase.AlwaysOpen; //todo from data folder
+                var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
 
                 var now = DateTime.UtcNow.AddDays(-1);
                 var requests = new[]
@@ -135,16 +143,17 @@ namespace QuantConnect.BybitBrokerage.Tests
                             Log.Debug($"{tick}");
                         }
                     }
-                    else if(slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
+                    else if (slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
                     {
                         Log.Debug($"{quoteBar}");
                     }
-                    else if(slice.Bars.TryGetValue(symbol, out var tradeBar))
+                    else if (slice.Bars.TryGetValue(symbol, out var tradeBar))
                     {
                         Log.Debug($"{tradeBar}");
                     }
                 }
-                Assert.Greater(historyProvider.DataPointCount,0);
+
+                Assert.Greater(historyProvider.DataPointCount, 0);
 
                 if (historyProvider.DataPointCount > 0)
                 {
@@ -168,7 +177,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                 Assert.DoesNotThrow(test);
             }
         }
-        
+
         protected virtual Brokerage CreateBrokerage()
         {
             var apiKey = Config.Get("bybit-api-key");

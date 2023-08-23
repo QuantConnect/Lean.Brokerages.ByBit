@@ -54,8 +54,10 @@ namespace QuantConnect.BybitBrokerage.Tests
             }
             else
             {
-                configs = new[] { GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
-                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution) };
+                configs = new[] {
+                    GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
+                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution) 
+                };
             }
 
             foreach (var config in configs)
