@@ -106,5 +106,11 @@ public class ByBitPlaceOrderRequest
         set;
     }
 
-
+    [JsonConverter(typeof(BybitDecimalStringConverter))]
+    public decimal? TpLimitPrice { get; set; }
+    public decimal? SlLimitPrice { get; set; }
+    public OrderType? TpOrderType { get; set; }
+    public OrderType? SlOrderType { get; set; }
+    [JsonProperty("'tpslMode")]
+    public string TpSlMode { get; set; }
 }

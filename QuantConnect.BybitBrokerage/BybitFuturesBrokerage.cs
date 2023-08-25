@@ -29,10 +29,11 @@ namespace QuantConnect.BybitBrokerage
     public class BybitFuturesBrokerage : BybitBrokerage
     {
         
-        
-        public BybitFuturesBrokerage(string marketName = Market.Bybit) : base(marketName)
+        public BybitFuturesBrokerage() : this(Market.Bybit){}
+        public BybitFuturesBrokerage(string marketName) : base(marketName)
         {
         }
+        
         /// <summary>
         /// Constructor for brokerage
         /// </summary>
@@ -45,6 +46,21 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="job">The live job packet</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
             webSocketBaseUrl,orderProvider,securityProvider, aggregator, job)
+        {
+            
+        }
+        /// <summary>
+        /// Constructor for brokerage
+        /// </summary>
+        /// <param name="apiKey">api key</param>
+        /// <param name="apiSecret">api secret</param>
+        /// <param name="restApiUrl">The rest api url</param>
+        /// <param name="webSocketBaseUrl">The web socket base url</param>
+        /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
+        /// <param name="aggregator">the aggregator for consolidating ticks</param>
+        /// <param name="job">The live job packet</param>
+        public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl,algorithm, orderProvider,securityProvider, aggregator, job, Market.Bybit)
         {
             
         }

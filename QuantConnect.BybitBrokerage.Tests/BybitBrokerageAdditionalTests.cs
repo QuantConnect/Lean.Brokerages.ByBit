@@ -13,22 +13,30 @@
  * limitations under the License.
 */
 
+using System;
+using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
+using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.Configuration;
 using QuantConnect.Util;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Securities;
+using QuantConnect.Tests.Common.Securities;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
     [TestFixture]
     public class BybitBrokerageAdditionalTests
     {
+
+        protected virtual string BrokerageName => nameof(BybitBrokerage);
+        
         [Test]
         public void ParameterlessConstructorComposerUsage()
         {
-            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>("BybitBrokerage");
+            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>(BrokerageName);
             Assert.IsNotNull(brokerage);
         }
 
@@ -39,14 +47,53 @@ namespace QuantConnect.BybitBrokerage.Tests
             Assert.True(brokerage.IsConnected);
         }
 
-        protected virtual Brokerage CreateBrokerage(IAlgorithm algorithm)
+        [Test]
+        public void ConnectedIfAlgorithmIsNotNullAndClientNotCreated()
+        {
+            using var brokerage = CreateBrokerage(Mock.Of<IAlgorithm>());
+            Assert.True(brokerage.IsConnected);
+        }
+
+        [Test]
+        public void ConnectToUserDataStreamIfAlgorithmNotNullAndApiIsCreated()
+        {
+            var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc));
+            var algorithmSettings = new AlgorithmSettings();
+            var transactions = new SecurityTransactionManager(null, securities);
+            transactions.SetOrderProcessor(new FakeOrderProcessor());
+
+            var algorithm = new Mock<IAlgorithm>();
+            algorithm.Setup(a => a.Transactions).Returns(transactions);
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
+            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
+
+            using var brokerage = CreateBrokerage(algorithm.Object);
+
+            Assert.True(brokerage.IsConnected);
+
+            var _ = brokerage.GetCashBalance();
+
+            Assert.True(brokerage.IsConnected);
+
+            brokerage.Disconnect();
+
+            Assert.False(brokerage.IsConnected);
+        }
+        
+        private Brokerage CreateBrokerage(IAlgorithm algorithm)
         {
             var apiKey = Config.Get("bybit-api-key");
             var apiSecret = Config.Get("bybit-api-secret");
             var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
-            
-            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,new AggregationManager(),null);
+
+            return CreateBrokerage(algorithm, apiKey, apiSecret, apiUrl, websocketUrl);
+        }
+
+        protected virtual Brokerage CreateBrokerage(IAlgorithm algorithm, string apiKey, string apiSecret,
+            string apiUrl, string websocketUrl)
+        {
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,new AggregationManager(),null);
         }
     }
 }

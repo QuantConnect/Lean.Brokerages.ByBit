@@ -14,21 +14,21 @@
 */
 
 using NUnit.Framework;
+using QuantConnect.Brokerages;
+using QuantConnect.Configuration;
+using QuantConnect.Util;
+using QuantConnect.Interfaces;
+using QuantConnect.Lean.Engine.DataFeeds;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture, Ignore("Not implemented")]
-    public class BybitBrokerageSymbolMapperTests
+    [TestFixture]
+    public class BybitFuturesBrokerageAdditionalTests : BybitBrokerageAdditionalTests
     {
-        [Test]
-        public void ReturnsCorrectLeanSymbol()
+        protected override string BrokerageName => nameof(BybitFuturesBrokerage);
+        protected override Brokerage CreateBrokerage(IAlgorithm algorithm, string apiKey, string apiSecret, string apiUrl, string websocketUrl)
         {
-
-        }
-
-        [Test]
-        public void ReturnsCorrectBrokerageSymbol()
-        {
+            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,new AggregationManager(),null);
 
         }
     }

@@ -22,6 +22,7 @@ using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
+using Instrument = System.Diagnostics.Metrics.Instrument;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox
 {
@@ -44,19 +45,19 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
             using var client = new BybitApi(null, null,null, null, apiUrl);
 
-            var linear = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
-            var inverse = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
-            var spot = (SecurityType.Crypto, client.Market.GetInstrumentInfo(BybitAccountCategory.Spot));
+            var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
+            var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
+            var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitAccountCategory.Spot));
 
-            foreach (var symbolSource in new[] { linear, inverse, spot })
-            {
-                foreach (var symbol in symbolSource.Item2)
+            var symbols = new[] { linear, inverse, spot }
+                    .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            
+         
+                foreach (var symbol in symbols)
                 {
                     //if (!symbol.UnifiedMarginTrade) continue;
-                    if (!symbol.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase)) continue;
-                    yield return GetInstrumentInfoString(symbol, symbolSource.Item1);
+                    if (!symbol.InstrumentInfo.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase)) continue;
+                    yield return GetInstrumentInfoString(symbol.InstrumentInfo, symbol.SecurityType);
                 }
-            }
         }
 
 
@@ -64,7 +65,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         {
             var securityTypeStr = securityType.ToStringInvariant().ToLowerInvariant();
             //market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier
-            //todo what's price scale and magnifier?
+            //todo do we need price scale and magnifier?
             return
                 $"{Market.ToLowerInvariant()},{info.Symbol},{securityTypeStr},{info.Symbol},{info.QuoteCoin},1,{info.PriceFilter.TickSize},{info.LotSizeFilter.QuantityStep ?? info.LotSizeFilter.BasePrecision},{info.Symbol},{info.LotSizeFilter.MinOrderQuantity}";
         }

@@ -15,7 +15,9 @@
 
 
 using System;
+using System.Linq;
 using System.Threading;
+using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Api;
@@ -25,8 +27,12 @@ using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
+using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
+using QuantConnect.Tests.Common.Securities;
+using QuantConnect.Util;
+using OrderStatus = QuantConnect.Orders.OrderStatus;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
@@ -39,11 +45,10 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected override SecurityType SecurityType => SecurityType.Crypto;
 
         protected override decimal GetDefaultQuantity() => 0.0005m;
-        protected override bool IsAsync() => false;
-       // protected override bool IsCancelAsync() => true;
 
-       
-       
+        protected override bool IsAsync() => false;
+        // protected override bool IsCancelAsync() => true;
+
 
         protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
 
@@ -51,46 +56,34 @@ namespace QuantConnect.BybitBrokerage.Tests
         public void Setup()
         {
             
+             //todo:  Market Buy orders on spot need to be send in the quote currency should we move that responsibility to the user
+             //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? 
         }
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
-            /*
-            var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc))
-            {
-                { Symbol, CreateSecurity(Symbol) }
-            };
+            var algorithm = new Mock<IAlgorithm>();
 
-            var orderProcessor = new FakeOrderProcessor();
-            var transactions = new SecurityTransactionManager(null, securities);
-            transactions.SetOrderProcessor(orderProcessor);
-
-           var algorithm = new Mock<IAlgorithm>();
-            algorithm.Setup(a => a.Transactions).Returns(transactions);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitBrokerageModel());
-            algorithm.Setup(a => a.Portfolio)
-                .Returns(new SecurityPortfolioManager(securities, transactions, new AlgorithmSettings()));
-*/
             var apiKey = Config.Get("bybit-api-key");
             var apiSecret = Config.Get("bybit-api-secret");
             var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,orderProvider,securityProvider, new AggregationManager(), null);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
+                securityProvider, new AggregationManager(), null, Market.Bybit);
         }
 
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
         {
-           return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
+            return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
         }
-        
-        
+
 
         protected override decimal GetAskPrice(Symbol symbol)
-        {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
+        {
+            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
             return _client.Market.GetTicker(BybitAccountCategory.Spot, brokerageSymbol).Ask1Price!.Value;
-
         }
 
 
@@ -151,11 +144,11 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             base.LongFromShort(parameters);
         }
-        
-        [Test, Explicit("This test requires reading the output and selection of a low volume security for the Brokerage")]
+
+        [Test,
+         Explicit("This test requires reading the output and selection of a low volume security for the Brokerage")]
         public void PartialFillsAndCancelsWhenMarket()
         {
-            //for whatver reason bybit cancels.. waoit a se c
             var manualResetEvent = new ManualResetEvent(false);
 
             var qty = GetDefaultQuantity() * 50;
@@ -168,7 +161,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                     var orderEvent = orderEvents[0];
                     remaining -= orderEvent.FillQuantity;
                     Log.Trace("Remaining: " + remaining + " FillQuantity: " + orderEvent.FillQuantity);
-                    if (orderEvent.Status ==  Orders.OrderStatus.Filled)
+                    if (orderEvent.Status == Orders.OrderStatus.Filled)
                     {
                         manualResetEvent.Set();
                     }
@@ -188,6 +181,33 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             Log.Trace("Remaining: " + remaining);
             Assert.AreEqual(0, remaining);
+        }
+
+        [Test]
+        public override void GetAccountHoldings()
+        {
+            Log.Trace("");
+            Log.Trace("GET ACCOUNT HOLDINGS");
+            Log.Trace("");
+            var before = Brokerage.GetCashBalance();
+
+            var order = new MarketOrder(Symbol, GetDefaultQuantity(), DateTime.UtcNow);
+            PlaceOrderWaitForStatus(order);
+
+            Thread.Sleep(3000);
+
+            var after = Brokerage.GetCashBalance();
+
+            CurrencyPairUtil.DecomposeCurrencyPair(Symbol, out var baseCurrency, out _);
+            var beforeHoldings = before.FirstOrDefault(x => x.Currency == baseCurrency);
+            var afterHoldings = after.FirstOrDefault(x => x.Currency == baseCurrency);
+
+            var beforeQuantity = beforeHoldings == null ? 0 : beforeHoldings.Amount;
+            var afterQuantity = afterHoldings == null ? 0 : afterHoldings.Amount;
+
+            var fee = order.Quantity * BybitFeeModel.TakerNonVIPFee;
+
+            Assert.AreEqual(GetDefaultQuantity(), afterQuantity - beforeQuantity + fee);
         }
         
     }

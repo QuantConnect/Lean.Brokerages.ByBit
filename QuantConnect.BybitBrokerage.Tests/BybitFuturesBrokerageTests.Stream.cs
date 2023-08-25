@@ -42,7 +42,7 @@ namespace QuantConnect.BybitBrokerage.Tests
         [Test, TestCaseSource(nameof(TestParameters))]
         public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
-            var cancelationToken = new CancellationTokenSource();
+            var cancellationToken = new CancellationTokenSource();
             var brokerage = (BybitBrokerage)Brokerage;
 
             SubscriptionDataConfig[] configs;
@@ -63,8 +63,8 @@ namespace QuantConnect.BybitBrokerage.Tests
             foreach (var config in configs)
             {
                 ProcessFeed(brokerage.Subscribe(config, (s, e) => { }),
-                    cancelationToken,
-                    (baseData) => { if (baseData != null) { Log.Trace("{baseData}"); }
+                    cancellationToken,
+                    (baseData) => { if (baseData != null) { Log.Trace($"{baseData}"); }
                     });
             }
 
@@ -77,7 +77,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             Thread.Sleep(20000);
 
-            cancelationToken.Cancel();
+            cancellationToken.Cancel();
         }
     }
 }

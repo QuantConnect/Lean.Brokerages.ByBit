@@ -135,7 +135,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                     ? Resolution.Minute
                     : (Resolution)Enum.Parse(typeof(Resolution), resolution);
 
-                // todo Load settings from config.json
+                //Load settings from config.json
                 var dataDirectory = Config.Get("data-folder", Globals.DataFolder);
 
                 var downloader =  CreateDownloader(sec,market);

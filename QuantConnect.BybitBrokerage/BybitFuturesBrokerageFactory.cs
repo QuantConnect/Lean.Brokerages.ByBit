@@ -9,7 +9,7 @@ namespace QuantConnect.BybitBrokerage;
 public class BybitFuturesBrokerageFactory : BybitBrokerageFactory
 {
     
-    public BybitFuturesBrokerageFactory(): base(typeof(BybitFuturesBrokerageFactory)){}
+    public BybitFuturesBrokerageFactory(): base(typeof(BybitFuturesBrokerage)){}
 
     public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BybitFuturesBrokerageModel();
 

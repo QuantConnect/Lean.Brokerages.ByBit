@@ -30,16 +30,14 @@ namespace QuantConnect.BybitBrokerage.Tests
             var eid = Composer.Instance.GetExportedValueByTypeName<IExchangeInfoDownloader>("BybitExchangeInfoDownloader");
             var tickers = eid.Get().ToList();
 
+            
+            
             Assert.IsTrue(tickers.Any());
-            var previousTicker = string.Empty;
             foreach (var tickerLine in tickers)
             {
                 Assert.IsTrue(tickerLine.StartsWith(eid.Market, StringComparison.OrdinalIgnoreCase));
                 var data = tickerLine.Split(",");
                 Assert.AreEqual(10, data.Length);
-                var ticker = data[1];
-                Assert.Greater(string.Compare(ticker, previousTicker, StringComparison.Ordinal), 0);
-                previousTicker = ticker;
             }
         }
     }

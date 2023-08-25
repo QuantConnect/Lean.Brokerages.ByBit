@@ -18,11 +18,13 @@ public class BybitTradeApiClient : BybitRestApiClient
 {
     private readonly BybitMarketApiClient _marketApiClient;
 
-    public BybitTradeApiClient(BybitMarketApiClient marketApiClient, ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
+    public BybitTradeApiClient(BybitMarketApiClient marketApiClient, ISymbolMapper symbolMapper, string apiPrefix,
+        IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(
+        symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
     {
         _marketApiClient = marketApiClient;
     }
-    
+
     public BybitPlaceOrderResponse CancelOrder(BybitAccountCategory category, Order order)
     {
         var endpoint = $"{ApiPrefix}/order/cancel";
@@ -33,15 +35,15 @@ public class BybitTradeApiClient : BybitRestApiClient
             Category = category,
             Symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol),
             OrderId = order.BrokerId.Single(),
-            OrderFilter =  GetOrderFilter(category, order)
+            OrderFilter = GetOrderFilter(category, order)
         };
-        
+
         var body = JsonConvert.SerializeObject(req, SerializerSettings);
         request.AddParameter("", body, "application/json", ParameterType.RequestBody);
-        
+
         AuthenticateRequest(request);
-        
-        var response  = ExecuteRequest(request);
+
+        var response = ExecuteRequest(request);
         var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
         return result;
     }
@@ -52,20 +54,22 @@ public class BybitTradeApiClient : BybitRestApiClient
         var request = new RestRequest(endpoint, Method.POST);
 
         var placeOrderReq = CreateRequest(category, order);
-        
+
 
         var body = JsonConvert.SerializeObject(placeOrderReq, SerializerSettings);
         request.AddParameter("", body, "application/json", ParameterType.RequestBody);
-        
+
         AuthenticateRequest(request);
 
         var response = ExecuteRequest(request);
         var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
         return result;
     }
+
     public IEnumerable<BybitOrder> GetOpenOrders(BybitAccountCategory category)
     {
-        return FetchAll(category, FetchOpenOrders, x => x.List.Length < 50); //todo why is there a next page in the first place.... double check API
+        return FetchAll(category, FetchOpenOrders,
+            x => x.List.Length < 50); //todo why is there a next page in the first place.... double check API
     }
 
     public BybitPlaceOrderResponse UpdateOrder(BybitAccountCategory category, Order order)
@@ -79,19 +83,19 @@ public class BybitTradeApiClient : BybitRestApiClient
 
         var body = JsonConvert.SerializeObject(placeOrderReq, SerializerSettings);
         request.AddParameter("", body, "application/json", ParameterType.RequestBody);
-        
+
         AuthenticateRequest(request);
 
         var response = ExecuteRequest(request);
         var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
         return result;
     }
-    
-    private ByBitPlaceOrderRequest CreateRequest(BybitAccountCategory category,Order order)
-    {
 
+    private ByBitPlaceOrderRequest CreateRequest(BybitAccountCategory category, Order order)
+    {
         return CreateRequest<ByBitPlaceOrderRequest>(category, order);
     }
+
     private T CreateRequest<T>(BybitAccountCategory category, Order order) where T : ByBitPlaceOrderRequest, new()
     {
         if (order.Direction == OrderDirection.Hold) throw new NotSupportedException();
@@ -106,6 +110,10 @@ public class BybitTradeApiClient : BybitRestApiClient
             OrderFilter = GetOrderFilter(category, order)
         };
         //todo reduce only
+        //todo close on trigger
+        //todo time in force
+        //todo double check tp/sl modes
+        var properties = order.Properties as BybitOrderProperties;
         switch (order)
         {
             case LimitOrder limitOrder:
@@ -114,12 +122,13 @@ public class BybitTradeApiClient : BybitRestApiClient
                 break;
             case MarketOrder mo:
                 req.OrderType = OrderType.Market;
-                req.TimeInForce = TimeInForce.GTC; //todo
+                //todo post only | req.TimeInForce = properties?.PostOnly == true ? TimeInForce.FOK : TimeInForce.IOC; //todo validate
                 if (category == BybitAccountCategory.Spot && order.Direction == OrderDirection.Buy)
                 {
-                    var price =  GetTickerPrice(category, order);
+                    var price = GetTickerPrice(category, order);
                     req.Quantity *= price; //todo is it okay to do that here?
                 }
+
                 break;
             case TrailingStopOrder trailingStopOrder:
                 throw new NotImplementedException();
@@ -129,12 +138,10 @@ public class BybitTradeApiClient : BybitRestApiClient
                 req.OrderType = OrderType.Limit;
                 req.TriggerPrice = stopLimitOrder.StopPrice;
                 req.Price = stopLimitOrder.LimitPrice;
+                req.TpSlMode = "Partial";
                 //todo req.ReduceOnly = true;
-                var   ticker = GetTickerPrice(category, order);
-                req.OrderFilter = OrderFilter.StopOrder;
-
+                var ticker = GetTickerPrice(category, order);
                 req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
-
 
                 break;
             case StopMarketOrder stopMarketOrder:
@@ -144,14 +151,16 @@ public class BybitTradeApiClient : BybitRestApiClient
                 ticker = GetTickerPrice(category, order);
                 req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
                 req.OrderFilter = OrderFilter.StopOrder;
+                req.ReduceOnly = true;
+                
                 if (category == BybitAccountCategory.Spot)
                 {
-                    req.OrderFilter = OrderFilter.StopOrder;
                     if (order.Direction == OrderDirection.Buy)
                     {
                         req.Quantity *= stopMarketOrder.StopPrice;
                     }
                 }
+
                 break;
             case LimitIfTouchedOrder limitIfTouched:
                 req.OrderType = OrderType.Limit;
@@ -174,14 +183,15 @@ public class BybitTradeApiClient : BybitRestApiClient
 
         request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
         request.AddQueryParameter("limit", "50");
-        if(category == BybitAccountCategory.Linear)
+        if (category == BybitAccountCategory.Linear)
         {
             request.AddQueryParameter("settleCoin", "USDT"); //todo
-        }else if(category == BybitAccountCategory.Spot)
+        }
+        else if (category == BybitAccountCategory.Spot)
         {
             //noop
         }
-       
+
         if (cursor != null)
         {
             request.AddQueryParameter("cursor", "cursor", false);
@@ -201,21 +211,35 @@ public class BybitTradeApiClient : BybitRestApiClient
         if (tickerPrice == 0)
         {
             var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(order.Symbol);
-            var ticker = _marketApiClient.GetTicker(category,brokerageSymbol);
+            var ticker = _marketApiClient.GetTicker(category, brokerageSymbol);
             if (ticker == null)
             {
-                throw new KeyNotFoundException($"BinanceBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
+                throw new KeyNotFoundException(
+                    $"BinanceBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
             }
+
             tickerPrice = order.Direction == OrderDirection.Buy ? ticker.Ask1Price.Value : ticker.Bid1Price.Value;
         }
+
         return tickerPrice;
     }
 
     private OrderFilter? GetOrderFilter(BybitAccountCategory category, Order order)
     {
         if (category != BybitAccountCategory.Spot) return null;
+        switch (order.Type)
+        {
+            case Orders.OrderType.StopLimit:
+            case Orders.OrderType.StopMarket:
+             //todo   return OrderFilter.TpSlOrder;
+            case Orders.OrderType.LimitIfTouched:
+                return OrderFilter.StopOrder;
+            default:
+                return default;
+        }
+
         return (order.Type is not (Orders.OrderType.Limit or Orders.OrderType.Market))
-            ? OrderFilter.StopOrder
+            ? OrderFilter.TpSlOrder
             : null;
     }
 }

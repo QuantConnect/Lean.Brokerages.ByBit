@@ -1,16 +1,46 @@
 using System;
+using System.Timers;
 using QuantConnect.Brokerages;
+using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage;
 
 public class BybitWebSocketWrapper : WebSocketClientWrapper
 {
-    public string ConnectionId { get; }
-    public IConnectionHandler ConnectionHandler { get; }
 
-    public BybitWebSocketWrapper(IConnectionHandler connectionHandler)
+    private Timer _pingTimer;
+    public string ConnectionId { get; }
+
+    public BybitWebSocketWrapper()
     {
         ConnectionId = Guid.NewGuid().ToString();
-        ConnectionHandler = connectionHandler;
     }
+
+    private void PingTimerElapsed(object sender, ElapsedEventArgs e)
+    {
+       Send("{\"op\":\"ping\"}");
+    }
+
+    protected override void OnOpen()
+    {
+        _pingTimer = new Timer(TimeSpan.FromSeconds(20).TotalMilliseconds);
+        _pingTimer.Elapsed += PingTimerElapsed;
+        _pingTimer.Start();
+        base.OnOpen();
+    }
+
+    protected override void OnClose(WebSocketCloseData e)
+    {
+        if (_pingTimer != null)
+        {
+            _pingTimer.Stop();
+            _pingTimer.Elapsed -= PingTimerElapsed;
+            _pingTimer.Dispose();
+            _pingTimer = null;
+        }
+
+        base.OnClose(e);
+    }
+    
+    
 }

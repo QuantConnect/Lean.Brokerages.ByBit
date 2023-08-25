@@ -4,6 +4,8 @@ namespace QuantConnect.BybitBrokerage.Models.Enums;
 
 public enum StopOrderType
 {
+    [EnumMember(Value = "UNKNOWN")]
+    Unknown,
     TakeProfit,
     StopLoss,
     TrailingStop,
@@ -12,6 +14,7 @@ public enum StopOrderType
     PartialStopLoss,
     [EnumMember(Value = "tpslOrder")]
     TPSLOrder,
-
     
+
+
 }

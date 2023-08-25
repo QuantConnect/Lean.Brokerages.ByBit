@@ -23,6 +23,6 @@ public class BybitWSTradeData
     public decimal Price { get; set; }
 
     [JsonProperty("L")] public TickDirection TickType { get; set; }
-    [JsonProperty("i")] public Guid Id { get; set; }
+    [JsonProperty("i")] public string Id { get; set; }
     [JsonProperty("BT")] public bool BT { get; set; }
 }

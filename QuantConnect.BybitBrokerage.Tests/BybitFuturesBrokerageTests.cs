@@ -1,4 +1,5 @@
 ﻿using System;
+using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Api;
@@ -16,33 +17,20 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
     protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");
     private BybitApi _client;
     protected override Symbol Symbol { get; } = BTCUSDT;
-    protected override SecurityType SecurityType { get; }
-
+    protected override SecurityType SecurityType => SecurityType.Future;
     protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
-
+    protected override decimal GetDefaultQuantity() => 0.001m;
     protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
     {
-        var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc))
-        {
-            { Symbol, CreateSecurity(Symbol) }
-        };
 
-        //var transactions = new SecurityTransactionManager(null, securities);
-        //transactions.SetOrderProcessor(new FakeOrderProcessor());
-
-        /*  var algorithm = new Mock<IAlgorithm>();
-            algorithm.Setup(a => a.Transactions).Returns(transactions);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitFuturesBrokerageModel());
-            algorithm.Setup(a => a.Portfolio)
-                .Returns(new SecurityPortfolioManager(securities, transactions, new AlgorithmSettings()));
-*/
+        var algorithm = new Mock<IAlgorithm>();
         var apiKey = Config.Get("bybit-api-key");
         var apiSecret = Config.Get("bybit-api-secret");
         var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
         var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
         _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, orderProvider, securityProvider,new AggregationManager(), null);
+        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider, securityProvider,new AggregationManager(), null);
     }
 
     protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
@@ -126,8 +114,8 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
     {
         base.LongFromShort(parameters);
     }
+    
     [Test, TestCaseSource(nameof(InverseSymbols))]
-
     public void InversePairNotSupported(Symbol symbol)
     {
         var parameter = new MarketOrderTestParameters(symbol);

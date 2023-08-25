@@ -27,21 +27,21 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
     private LiveNodePacket _job;
     private string _privateWebSocketUrl;
-    private Timer _keepAliveTimer;
+    private Lazy<BybitApi> _apiClientLazy;
 
     //private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
     protected string MarketName { get; set; }
-    protected BybitApi ApiClient { get; set; }
+    protected BybitApi ApiClient => _apiClientLazy?.Value;
     protected IOrderProvider OrderProvider { get; private set; }
     protected virtual BybitAccountCategory Category => BybitAccountCategory.Spot;
 
     /// <summary>
     /// Returns true if we're currently connected to the broker
     /// </summary>
-    public override bool IsConnected => WebSocket?.IsOpen ?? false;
+    public override bool IsConnected => _apiClientLazy?.IsValueCreated != true ||  WebSocket?.IsOpen == true;
 
     /// <summary>
     /// Parameterless constructor for brokerage
@@ -144,12 +144,18 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             yield break;
         }
 
+        if (request.Symbol.SecurityType != GetSupportedSecurityType())
+        {
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSecurityType",
+                $"{request.Symbol.SecurityType} security type not supported, no history returned"));
+            yield break;
+        }
+        
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
 
         if (request.Resolution == Resolution.Tick)
         {
-            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc,
-                request.EndTimeUtc);
+            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc, request.EndTimeUtc);
             foreach (var tick in res)
             {
                 yield return new Tick(tick.Time, request.Symbol, string.Empty,MarketName, 
@@ -186,7 +192,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _privateWebSocketUrl = $"{baseWssUrl}/v5/private";
         var publicWssUrl = $"{baseWssUrl}/v5/public/{Category.ToStringInvariant().ToLowerInvariant()}";
 
-        base.Initialize(_privateWebSocketUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
+        base.Initialize(_privateWebSocketUrl, new BybitWebSocketWrapper(), null, apiKey, apiSecret);
 
         _job = job;
         _algorithm = algorithm;
@@ -196,38 +202,27 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         OrderProvider = orderProvider;
         MarketName = marketName;
 
-
-        // todo send ping for public 
         var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(publicWssUrl,
             100,
             100,
             new Dictionary<Symbol, int>(),
-            () => new BybitWebSocketWrapper(null),
+            () => new BybitWebSocketWrapper(),
             Subscribe,
             Unsubscribe,
             OnDataMessage,
             TimeSpan.FromDays(1));
-
-
         SubscriptionManager = subscriptionManager;
-        ApiClient = GetApiClient(_symbolMapper,securityProvider, restApiUrl, apiKey, apiSecret);
-
-        _keepAliveTimer = new()
+        
+        // can be null, if BybitBrokerage is used as DataQueueHandler only
+        if (_algorithm != null)
         {
-            // 20 seconds
-            Interval = 20 * 1000,
-        };
-        _keepAliveTimer.Elapsed += (_, _) => Send(WebSocket, new { op = "ping" });
-
-        WebSocket.Open += (s, e) =>
-        {
-            _keepAliveTimer.Start();
-            Send(WebSocket, ApiClient.AuthenticateWebSocket());
-            Send(WebSocket, new { op = "subscribe", args = new[] { "order" } });
-        };
-
-        WebSocket.Closed += (s, e) => { _keepAliveTimer.Stop(); };
-
+            _apiClientLazy = new Lazy<BybitApi>(() =>
+            {
+                var client =  GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret);
+                Connect(client);
+                return client;
+            });
+        }
         //todo ValidateSubscription(); 
     }
 
@@ -262,9 +257,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
     public override void Dispose()
     {
-        _keepAliveTimer.DisposeSafely();
-        _webSocketRateLimiter.DisposeSafely();
-
         SubscriptionManager.DisposeSafely();
         ApiClient.DisposeSafely();
 
@@ -276,12 +268,13 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         switch (orderStatus)
         {
+            //todo verify especially triggered/untriggered
             case Models.Enums.OrderStatus.Created:
             case Models.Enums.OrderStatus.New:
             case Models.Enums.OrderStatus.Untriggered:
             case Models.Enums.OrderStatus.Triggered:
             case Models.Enums.OrderStatus.Active:
-                return OrderStatus.New;
+                return OrderStatus.Submitted;
             case Models.Enums.OrderStatus.PartiallyFilled:
                 return OrderStatus.PartiallyFilled;
             case Models.Enums.OrderStatus.Filled:

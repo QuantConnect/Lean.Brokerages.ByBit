@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using QuantConnect.Brokerages;
+using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
@@ -35,7 +36,6 @@ public partial class BybitBrokerage
                 if (item.StopOrderType == StopOrderType.TrailingStop)
                 {
                     throw new NotImplementedException();
-                    //todo implement trailing
                 }
 
                 order = item.OrderType == OrderType.Limit
@@ -112,11 +112,10 @@ public partial class BybitBrokerage
         {
             var result = ApiClient.Trade.PlaceOrder(Category, order);
             order.BrokerId.Add(result.OrderId);
-            //todo change order props
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
-                Status = OrderStatus.Submitted
-            }); //todo is zero fees okay here? We only know about fees when the order is executed
+                Status = OrderStatus.Submitted //todo submitted to async?
+            });
             submitted = true;
         });
 
@@ -145,7 +144,7 @@ public partial class BybitBrokerage
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
                 Status = OrderStatus.UpdateSubmitted
-            }); //todo is zero fees okay here? We only know about fees when the order is executed
+            }); 
             submitted = true;
             //OnOrderIdChangedEvent(new BrokerageOrderIdChangedEvent(){BrokerId = cachedOrder.BrokerId, OrderId = order.Id});
         });
@@ -205,16 +204,14 @@ public partial class BybitBrokerage
             return;
 
         // cannot reach this code if rest api client is not created
-        // WebSocket is  responsible for Binance UserData stream only
-        // as a result we don't need to connect user data stream if BinanceBrokerage is used as DQH only
+        // WebSocket is  responsible for Bybit UserData stream only
+        // as a result we don't need to connect user data stream if BybitBrokerage is used as DQH only
         // or until Algorithm is actually initialized
 
-        //todo reconnect
-        if (WebSocket == null) return;
-        WebSocket.Initialize(_privateWebSocketUrl);
-        ConnectSync();
+        Connect(null);
+       
     }
-
+    
     /// <summary>
     /// Disconnects the client from the broker's remote servers
     /// </summary>
@@ -222,7 +219,6 @@ public partial class BybitBrokerage
     {
         if (WebSocket?.IsOpen != true) return;
 
-        _keepAliveTimer.Stop();
         WebSocket.Close();
     }
 
