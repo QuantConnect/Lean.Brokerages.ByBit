@@ -67,6 +67,7 @@ public partial class BybitBrokerage
             apiSecret: job.BrokerageData["bybit-api-secret"],
             algorithm: null,
             orderProvider: null,
+            securityProvider: null,
             aggregator,
             job,
             Market.Bybit

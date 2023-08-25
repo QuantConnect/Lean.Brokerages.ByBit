@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NodaTime;
 using QuantConnect.Brokerages;
+using QuantConnect.BybitBrokerage;
 using QuantConnect.Configuration;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
@@ -35,18 +36,27 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
     {
         private readonly string _market;
         private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
-        private readonly BybitBrokerage.BybitBrokerage _brokerage;
+        
 
         public BybitBrokerageDownloader(string market = Market.Bybit)
         {
             _market = market;
             _symbolMapper = new(_market);
 
-            var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
-            _brokerage = new BybitBrokerage.BybitBrokerage(string.Empty, String.Empty, apiUrl, String.Empty, null, null, null);
         }
 
-        
+
+        private Brokerage CreateBrokerage()
+        {
+            var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
+            return CreateBrokerage(apiUrl);
+        }
+
+        protected virtual Brokerage CreateBrokerage(string apiUrl)
+        {
+            return new BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null);
+        }
+
         /// <summary>
         /// Get historical data enumerable for a single symbol, type and resolution given this start and end time (in UTC).
         /// </summary>
@@ -54,33 +64,32 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         /// <returns>Enumerable of base data for this symbol</returns>
         public IEnumerable<BaseData> Get(DataDownloaderGetParameters dataDownloaderGetParameters)
         {
-            //todo spot vs futures
-            
+    
             var symbol = dataDownloaderGetParameters.Symbol;
             var resolution = dataDownloaderGetParameters.Resolution;
             var startUtc = dataDownloaderGetParameters.StartUtc;
             var endUtc = dataDownloaderGetParameters.EndUtc;
             var tickType = dataDownloaderGetParameters.TickType;
-            
-            
+
+
             if (tickType != TickType.Trade)
-            {  return Enumerable.Empty<BaseData>();
+            {
+                return Enumerable.Empty<BaseData>();
             }
             
-
             if (!_symbolMapper.IsKnownLeanSymbol(symbol))
                 throw new ArgumentException($"The ticker {symbol.Value} is not available.");
 
             if (endUtc < startUtc)
                 throw new ArgumentException("The end date must be greater or equal than the start date.");
-
+            
             var historyRequest = new HistoryRequest(
                 startUtc,
                 endUtc,
                 resolution == Resolution.Tick ? typeof(Tick) : typeof(TradeBar),
                 symbol,
                 resolution,
-                SecurityExchangeHours.AlwaysOpen(DateTimeZone.Utc), 
+                SecurityExchangeHours.AlwaysOpen(DateTimeZone.Utc),
                 DateTimeZone.Utc,
                 resolution,
                 false,
@@ -88,10 +97,11 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                 DataNormalizationMode.Raw,
                 tickType);
 
-            var data = _brokerage.GetHistory(historyRequest);
+            var brokerage = CreateBrokerage();
+            var data = brokerage.GetHistory(historyRequest);
             return data;
-
         }
+
         /// <summary>
         /// Creates Lean Symbol
         /// </summary>
@@ -102,7 +112,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             return _symbolMapper.GetLeanSymbol(ticker, SecurityType.CryptoFuture, _market);
         }
 
-          public static void DownloadHistory(List<string> tickers, string resolution, string securityType,
+        public static void DownloadHistory(List<string> tickers, string resolution, string securityType,
             DateTime fromDate, DateTime toDate, string market = Market.Bybit)
         {
             if (resolution.IsNullOrEmpty() || tickers.IsNullOrEmpty())
@@ -113,6 +123,11 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                 Environment.Exit(1);
             }
 
+            if (!Enum.TryParse<SecurityType>(securityType, true, out var sec))
+            {
+                sec = SecurityType.Crypto;
+            }
+            
             try
             {
                 var allResolutions = resolution.Equals("all", StringComparison.OrdinalIgnoreCase);
@@ -120,10 +135,10 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                     ? Resolution.Minute
                     : (Resolution)Enum.Parse(typeof(Resolution), resolution);
 
-                // Load settings from config.json
+                // todo Load settings from config.json
                 var dataDirectory = Config.Get("data-folder", Globals.DataFolder);
 
-                var downloader = new BybitBrokerageDownloader(market);
+                var downloader =  CreateDownloader(sec,market);
 
                 foreach (var ticker in tickers)
                 {
@@ -131,15 +146,15 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                     var symbol = downloader.GetSymbol(ticker);
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate,
                         toDate, tickType: TickType.Trade));
-                
+
                     //var bars = data.Cast<TradeBar>().ToList();
 
-                    
+
                     // Save the data (single resolution)
                     var writer = new LeanDataWriter(castResolution, symbol, dataDirectory);
                     writer.Write(data);
 
-                    
+
                     if (allResolutions && castResolution != Resolution.Tick)
                     {
                         var bars = data.Cast<TradeBar>();
@@ -159,5 +174,30 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                 Log.Error(err);
             }
         }
+
+        private static BybitBrokerageDownloader CreateDownloader(SecurityType securityType, string market)
+        {
+            switch (securityType)
+            {
+                case SecurityType.CryptoFuture: return new BybitFuturesBrokerageDownloader(market);
+                case SecurityType.Crypto: return new BybitBrokerageDownloader(market);
+                default:
+                    throw new NotSupportedException(
+                        $"Only {nameof(SecurityType.Crypto)} and {nameof(SecurityType.CryptoFuture)} are supported");
+            }
+        }
     }
+
+    public class BybitFuturesBrokerageDownloader : BybitBrokerageDownloader
+    {
+        public BybitFuturesBrokerageDownloader(string market = Market.Bybit) : base(market)
+        {
+        }
+
+        protected override Brokerage CreateBrokerage(string apiUrl)
+        {
+            return new BybitFuturesBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null);
+        }
+    }
+    
 }

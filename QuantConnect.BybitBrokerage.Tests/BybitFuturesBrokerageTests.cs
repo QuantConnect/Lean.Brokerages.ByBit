@@ -42,12 +42,12 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
         var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
         _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, new AggregationManager(), null, orderProvider);
+        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, orderProvider, securityProvider,new AggregationManager(), null);
     }
 
     protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
     {
-        return new BybitApi(SymbolMapper, apiKey, apiSecret, apiUrl);
+        return new BybitApi(SymbolMapper, null,apiKey, apiSecret, apiUrl);
     }
         
         

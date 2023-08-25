@@ -73,6 +73,7 @@ public partial class BybitBrokerage
         }
     }
 
+    //todo cleanup this mess
     private void HandleOrderUpdate(JObject jObject)
     {
         var orders = jObject.ToObject<BybitDataMessage<BybitOrder[]>>(JsonSerializer).Data;
@@ -94,8 +95,37 @@ public partial class BybitBrokerage
                 CurrencyPairUtil.DecomposeCurrencyPair(leanOrder.Symbol, out var baseCurrency, out _);
                 fee = new OrderFee(new CashAmount(order.ExecutedFee.Value, baseCurrency));
             }
+            Log.Trace($"Order status changed old: {leanOrder.Status.ToStringInvariant()} new: {newStatus.ToStringInvariant()}");
+            if(newStatus == Orders.OrderStatus.Canceled){
+            {
+                Log.Trace($"Canceled: {order.CancelType?.ToStringInvariant()}: {order.RejectReason} {order.QuantityFilled}/{order.QuantityRemaining}");
+            }}
 
-            orderEvent = new OrderEvent(leanOrder, order.UpdateTime, fee) { Status = newStatus };
+            if (order.Status == OrderStatus.PartiallyFilledCanceled)
+            {
+                OnOrderEvent(new OrderEvent(leanOrder, order.UpdateTime, fee) { Status = Orders.OrderStatus.PartiallyFilled, FillQuantity = order.QuantityFilled ?? 0, FillPrice = order.AveragePrice??0});
+                //Todo bybit is cancelling partially filled market orders...
+            }
+            if (newStatus == Orders.OrderStatus.PartiallyFilled || newStatus == Orders.OrderStatus.Filled)
+            {
+                Log.Trace($"Partially filled: {order.QuantityFilled}/{order.QuantityRemaining} {order.Price} {order.AveragePrice} ");
+
+            }
+            OrderProvider.GetOrders(x =>
+            {
+                if (x.Id == leanOrder.Id)
+                {
+                    //todo ugly way to fix tests
+
+                    x.Status = newStatus;
+                    return true;
+                }
+
+                return false;
+                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            }).ToArray();
+            
+            orderEvent = new OrderEvent(leanOrder, order.UpdateTime, fee) { Status = newStatus, FillQuantity = order.QuantityFilled ?? 0, FillPrice = order.AveragePrice??0};
             OnOrderEvent(orderEvent);
         }
     }

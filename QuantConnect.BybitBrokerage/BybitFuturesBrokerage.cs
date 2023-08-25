@@ -43,8 +43,8 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
-        public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IDataAggregator aggregator, LiveNodePacket job, IOrderProvider orderProvider) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl,orderProvider, aggregator, job)
+        public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl,orderProvider,securityProvider, aggregator, job)
         {
             
         }

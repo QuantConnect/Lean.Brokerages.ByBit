@@ -19,6 +19,11 @@ public class ByBitPlaceOrderRequest
     /// Order type
     /// </summary>
     public OrderType OrderType { get; set; }
+    
+    /// <summary>
+    /// Valid for spot only. Order,tpslOrder, StopOrder. If not passed, Order by default
+    /// </summary>
+    public OrderFilter? OrderFilter { get; set; }
 
     /// <summary>
     /// Order price

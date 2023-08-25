@@ -13,20 +13,20 @@
  * limitations under the License.
 */
 
+
 using System;
-using Moq;
+using System.Threading;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
-using QuantConnect.Tests;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Packets;
+using QuantConnect.Logging;
+using QuantConnect.Orders;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
-using QuantConnect.Tests.Common.Securities;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
@@ -38,21 +38,36 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected override Symbol Symbol { get; } = BTCUSDT;
         protected override SecurityType SecurityType => SecurityType.Crypto;
 
+        protected override decimal GetDefaultQuantity() => 0.0005m;
+        protected override bool IsAsync() => false;
+       // protected override bool IsCancelAsync() => true;
+
+       
+       
+
         protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
+
+        [SetUp]
+        public void Setup()
+        {
+            
+        }
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
+            /*
             var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc))
             {
                 { Symbol, CreateSecurity(Symbol) }
             };
 
-            //var transactions = new SecurityTransactionManager(null, securities);
-            //transactions.SetOrderProcessor(new FakeOrderProcessor());
+            var orderProcessor = new FakeOrderProcessor();
+            var transactions = new SecurityTransactionManager(null, securities);
+            transactions.SetOrderProcessor(orderProcessor);
 
-          /*  var algorithm = new Mock<IAlgorithm>();
+           var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitFuturesBrokerageModel());
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitBrokerageModel());
             algorithm.Setup(a => a.Portfolio)
                 .Returns(new SecurityPortfolioManager(securities, transactions, new AlgorithmSettings()));
 */
@@ -62,16 +77,15 @@ namespace QuantConnect.BybitBrokerage.Tests
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,orderProvider, new AggregationManager(), null);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl,orderProvider,securityProvider, new AggregationManager(), null);
         }
 
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
         {
-           return new BybitApi(SymbolMapper, apiKey, apiSecret, apiUrl);
+           return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
         }
         
         
-        protected override bool IsAsync() => false;
 
         protected override decimal GetAskPrice(Symbol symbol)
         {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
@@ -136,6 +150,44 @@ namespace QuantConnect.BybitBrokerage.Tests
         public override void LongFromShort(OrderTestParameters parameters)
         {
             base.LongFromShort(parameters);
+        }
+        
+        [Test, Explicit("This test requires reading the output and selection of a low volume security for the Brokerage")]
+        public void PartialFillsAndCancelsWhenMarket()
+        {
+            //for whatver reason bybit cancels.. waoit a se c
+            var manualResetEvent = new ManualResetEvent(false);
+
+            var qty = GetDefaultQuantity() * 50;
+            var remaining = qty;
+            var sync = new object();
+            Brokerage.OrdersStatusChanged += (sender, orderEvents) =>
+            {
+                lock (sync)
+                {
+                    var orderEvent = orderEvents[0];
+                    remaining -= orderEvent.FillQuantity;
+                    Log.Trace("Remaining: " + remaining + " FillQuantity: " + orderEvent.FillQuantity);
+                    if (orderEvent.Status ==  Orders.OrderStatus.Filled)
+                    {
+                        manualResetEvent.Set();
+                    }
+                }
+            };
+
+            // pick a security with low, but some, volume
+            var symbol = BTCUSDT;
+            var order = new MarketOrder(symbol, qty, DateTime.UtcNow);
+            OrderProvider.Add(order);
+            Brokerage.PlaceOrder(order);
+
+            // pause for a while to wait for fills to come in
+            manualResetEvent.WaitOne(2500);
+            manualResetEvent.WaitOne(2500);
+            manualResetEvent.WaitOne(2500);
+
+            Log.Trace("Remaining: " + remaining);
+            Assert.AreEqual(0, remaining);
         }
         
     }

@@ -38,7 +38,6 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             var targetAppName = targetApp.ToString();
             if (targetAppName.Contains("download") || targetAppName.Contains("dl"))
             {
-                var downloader = new BybitBrokerageDownloader();
                 var fromDate = Parse.DateTimeExact(GetParameterOrExit(optionsObject, "from-date"), "yyyyMMdd-HH:mm:ss");
                 var resolution = optionsObject.ContainsKey("resolution") ? optionsObject["resolution"].ToString() : "";
                 var securityType = optionsObject.ContainsKey("security-type") ? optionsObject["security-type"].ToString() : "";

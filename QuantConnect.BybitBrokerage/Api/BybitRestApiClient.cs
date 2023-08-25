@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Web;
 using Newtonsoft.Json;
@@ -10,13 +11,14 @@ using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Logging;
+using QuantConnect.Orders;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
-public class BybitRestApiClient 
+public abstract class BybitRestApiClient 
 {
     protected static readonly JsonSerializerSettings SerializerSettings = new()
     {
@@ -34,6 +36,7 @@ public class BybitRestApiClient
 
     protected string ApiPrefix { get; }
     protected ISymbolMapper SymbolMapper { get; }
+    protected ISecurityProvider SecurityProvider { get; }
     
 
     /// <summary>
@@ -43,13 +46,15 @@ public class BybitRestApiClient
     /// <param name="apiKey">The Binance API key</param>
     /// <param name="restApiUrl">The Bina
     /// nce API rest url</param>
-    public BybitRestApiClient(
+    protected BybitRestApiClient(
         ISymbolMapper symbolMapper,
         string apiPrefix,
         IRestClient restClient,
+        ISecurityProvider securityProvider,
         Action<IRestRequest> requestAuthenticator)
     {
         SymbolMapper = symbolMapper;
+        SecurityProvider = securityProvider;
         _restClient = restClient;
         _requestAuthenticator = requestAuthenticator;
         ApiPrefix = apiPrefix;
@@ -72,6 +77,7 @@ public class BybitRestApiClient
         return results.ToArray();
     }
     
+    [StackTraceHidden]
     protected T EnsureSuccessAndParse<T>(IRestResponse response)
     {
         if (response.StatusCode != HttpStatusCode.OK)
@@ -120,8 +126,9 @@ public class BybitRestApiClient
         _requestAuthenticator(request);
     }
 
-
+    protected virtual BybitAccountType BybitAccountType(BybitAccountCategory category) =>
+        Models.Enums.BybitAccountType.Unified;
     
 
-   
+    
 }

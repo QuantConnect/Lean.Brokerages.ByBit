@@ -8,5 +8,5 @@ public class ByBitCancelOrderRequest
     public string Symbol { get; set; }
     public string OrderId { get; set; }
     public string OrderLinkId { get; set; }
-    public string OrderFilter { get; set; }
+    public OrderFilter? OrderFilter { get; set; }
 }

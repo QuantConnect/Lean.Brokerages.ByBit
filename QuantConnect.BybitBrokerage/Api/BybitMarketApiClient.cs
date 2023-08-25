@@ -5,13 +5,14 @@ using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Orders;
+using QuantConnect.Securities;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
 public class BybitMarketApiClient : BybitRestApiClient
 {
-    public BybitMarketApiClient(ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, requestAuthenticator)
+    public BybitMarketApiClient(ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
     {
     }
     

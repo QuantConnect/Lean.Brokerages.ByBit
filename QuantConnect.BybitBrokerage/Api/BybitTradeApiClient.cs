@@ -7,8 +7,10 @@ using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.BybitBrokerage.Models.Requests;
 using QuantConnect.Orders;
+using QuantConnect.Securities;
 using RestSharp;
 using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
+using TimeInForce = QuantConnect.BybitBrokerage.Models.Enums.TimeInForce;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
@@ -16,6 +18,11 @@ public class BybitTradeApiClient : BybitRestApiClient
 {
     private readonly BybitMarketApiClient _marketApiClient;
 
+    public BybitTradeApiClient(BybitMarketApiClient marketApiClient, ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
+    {
+        _marketApiClient = marketApiClient;
+    }
+    
     public BybitPlaceOrderResponse CancelOrder(BybitAccountCategory category, Order order)
     {
         var endpoint = $"{ApiPrefix}/order/cancel";
@@ -25,9 +32,10 @@ public class BybitTradeApiClient : BybitRestApiClient
         {
             Category = category,
             Symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol),
-            OrderId = order.BrokerId.Single()
+            OrderId = order.BrokerId.Single(),
+            OrderFilter =  GetOrderFilter(category, order)
         };
-            
+        
         var body = JsonConvert.SerializeObject(req, SerializerSettings);
         request.AddParameter("", body, "application/json", ParameterType.RequestBody);
         
@@ -94,9 +102,9 @@ public class BybitTradeApiClient : BybitRestApiClient
             Quantity = Math.Abs(order.Quantity),
             //OrderLinkId = order.Id.ToStringInvariant(), todo
             Symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol),
-            PositionIndex = 0
+            PositionIndex = 0,
+            OrderFilter = GetOrderFilter(category, order)
         };
-        
         //todo reduce only
         switch (order)
         {
@@ -106,6 +114,12 @@ public class BybitTradeApiClient : BybitRestApiClient
                 break;
             case MarketOrder mo:
                 req.OrderType = OrderType.Market;
+                req.TimeInForce = TimeInForce.GTC; //todo
+                if (category == BybitAccountCategory.Spot && order.Direction == OrderDirection.Buy)
+                {
+                    var price =  GetTickerPrice(category, order);
+                    req.Quantity *= price; //todo is it okay to do that here?
+                }
                 break;
             case TrailingStopOrder trailingStopOrder:
                 throw new NotImplementedException();
@@ -116,8 +130,10 @@ public class BybitTradeApiClient : BybitRestApiClient
                 req.TriggerPrice = stopLimitOrder.StopPrice;
                 req.Price = stopLimitOrder.LimitPrice;
                 //todo req.ReduceOnly = true;
-                var ticker = _marketApiClient.GetTicker(category,order);
-                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+                var   ticker = GetTickerPrice(category, order);
+                req.OrderFilter = OrderFilter.StopOrder;
+
+                req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
 
 
                 break;
@@ -125,15 +141,24 @@ public class BybitTradeApiClient : BybitRestApiClient
                 req.OrderType = OrderType.Market;
                 req.TriggerPrice = stopMarketOrder.StopPrice;
                 //todo req.ReduceOnly = true;
-                ticker = _marketApiClient.GetTicker(category,order);
-                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+                ticker = GetTickerPrice(category, order);
+                req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
+                req.OrderFilter = OrderFilter.StopOrder;
+                if (category == BybitAccountCategory.Spot)
+                {
+                    req.OrderFilter = OrderFilter.StopOrder;
+                    if (order.Direction == OrderDirection.Buy)
+                    {
+                        req.Quantity *= stopMarketOrder.StopPrice;
+                    }
+                }
                 break;
             case LimitIfTouchedOrder limitIfTouched:
                 req.OrderType = OrderType.Limit;
                 req.TriggerPrice = limitIfTouched.TriggerPrice;
                 req.Price = limitIfTouched.LimitPrice;
-                ticker = _marketApiClient.GetTicker(category,order);
-                req.TriggerDirection = req.TriggerPrice > ticker.LastPrice ? 1 : 2;
+                ticker = GetTickerPrice(category, order);
+                req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
 
                 break;
             default: throw new NotSupportedException($"Order type {order.Type.ToStringInvariant()} is not supported");
@@ -169,8 +194,28 @@ public class BybitTradeApiClient : BybitRestApiClient
         return orders;
     }
 
-    public BybitTradeApiClient(BybitMarketApiClient marketApiClient, ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, requestAuthenticator)
+    private decimal GetTickerPrice(BybitAccountCategory category, Order order)
     {
-        _marketApiClient = marketApiClient;
+        var security = SecurityProvider.GetSecurity(order.Symbol);
+        var tickerPrice = order.Direction == OrderDirection.Buy ? security.AskPrice : security.BidPrice;
+        if (tickerPrice == 0)
+        {
+            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(order.Symbol);
+            var ticker = _marketApiClient.GetTicker(category,brokerageSymbol);
+            if (ticker == null)
+            {
+                throw new KeyNotFoundException($"BinanceBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
+            }
+            tickerPrice = order.Direction == OrderDirection.Buy ? ticker.Ask1Price.Value : ticker.Bid1Price.Value;
+        }
+        return tickerPrice;
+    }
+
+    private OrderFilter? GetOrderFilter(BybitAccountCategory category, Order order)
+    {
+        if (category != BybitAccountCategory.Spot) return null;
+        return (order.Type is not (Orders.OrderType.Limit or Orders.OrderType.Market))
+            ? OrderFilter.StopOrder
+            : null;
     }
 }

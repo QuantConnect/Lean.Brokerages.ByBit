@@ -69,8 +69,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Actual market name</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName = Market.Bybit)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null, aggregator, job, orderProvider, marketName)
+        IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName = Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null,orderProvider, securityProvider, aggregator, job, marketName)
     {
     }
 
@@ -86,8 +86,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job,
-            algorithm?.Portfolio?.Transactions, Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm,algorithm?.Portfolio?.Transactions,algorithm?.Portfolio, aggregator, job, Market.Bybit)
     {
     }
 
@@ -104,8 +103,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="orderProvider"></param>
     /// <param name="marketName">Actual market name</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, IOrderProvider orderProvider,
-        string marketName)
+        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName)
         : base(marketName)
     {
         Initialize(
@@ -115,6 +113,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             apiSecret,
             algorithm,
             orderProvider,
+            securityProvider,
             aggregator,
             job,
             marketName
@@ -153,7 +152,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 request.EndTimeUtc);
             foreach (var tick in res)
             {
-                yield return new Tick(tick.Time, request.Symbol, string.Empty, Exchange.Bybit,
+                yield return new Tick(tick.Time, request.Symbol, string.Empty,MarketName, 
                     tick.Size * (tick.Side == OrderSide.Buy ? 1m : -1m), tick.price);
             }
 
@@ -161,7 +160,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
 
         var client = ApiClient ??
-                     GetApiClient(_symbolMapper, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null);
+                     GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null);
 
         var kLines = client.Market
             .GetKLines(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
@@ -176,7 +175,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     }
 
     protected void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
-        IAlgorithm algorithm, IOrderProvider orderProvider, IDataAggregator aggregator, LiveNodePacket job,
+        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job,
         string marketName)
     {
         if (IsInitialized)
@@ -211,7 +210,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
 
         SubscriptionManager = subscriptionManager;
-        ApiClient = GetApiClient(_symbolMapper, restApiUrl, apiKey, apiSecret);
+        ApiClient = GetApiClient(_symbolMapper,securityProvider, restApiUrl, apiKey, apiSecret);
 
         _keepAliveTimer = new()
         {
@@ -255,10 +254,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         return true;
     }
     
-    protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, string restApiUrl, string apiKey, string apiSecret)
+    protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider, string restApiUrl, string apiKey, string apiSecret)
     {
         var url = Config.Get("bybit-api-url", "https://api.bybit.com");
-        return new BybitApi(symbolMapper, apiKey, apiSecret, restApiUrl);
+        return new BybitApi(symbolMapper,securityProvider, apiKey, apiSecret, restApiUrl);
     }
 
     public override void Dispose()

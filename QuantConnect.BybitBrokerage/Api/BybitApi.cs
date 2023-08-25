@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using QuantConnect.Brokerages;
+using QuantConnect.Securities;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
@@ -20,6 +21,7 @@ public class BybitApi : IDisposable
     public BybitTradeApiClient Trade { get; }
     public BybitApi(
         ISymbolMapper symbolMapper,
+        ISecurityProvider securityProvider,
         string apiKey,
         string apiSecret,
         string restApiUrl)
@@ -30,10 +32,10 @@ public class BybitApi : IDisposable
 
         var apiPrefix = "/v5";
 
-        Market = new BybitMarketApiClient(symbolMapper, apiPrefix, _restClient, AuthenticateRequest);
-        Account = new BybitAccountApiClient(symbolMapper, apiPrefix, _restClient, AuthenticateRequest);
-        Position = new BybitPositionApiClient(symbolMapper, apiPrefix, _restClient, AuthenticateRequest);
-        Trade = new BybitTradeApiClient(Market, symbolMapper, apiPrefix, _restClient, AuthenticateRequest);
+        Market = new BybitMarketApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
+        Account = new BybitAccountApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
+        Position = new BybitPositionApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
+        Trade = new BybitTradeApiClient(Market, symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
         
     }
     public object AuthenticateWebSocket()

@@ -42,7 +42,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         public IEnumerable<string> Get()
         {
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
-            using var client = new BybitApi(null, null, null, apiUrl);
+            using var client = new BybitApi(null, null,null, null, apiUrl);
 
             var linear = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
             var inverse = (SecurityType.CryptoFuture, client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
