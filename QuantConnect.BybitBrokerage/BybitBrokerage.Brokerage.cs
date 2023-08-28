@@ -35,7 +35,7 @@ public partial class BybitBrokerage
             {
                 if (item.StopOrderType == StopOrderType.TrailingStop)
                 {
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
                 }
 
                 order = item.OrderType == OrderType.Limit
@@ -144,7 +144,7 @@ public partial class BybitBrokerage
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
                 Status = OrderStatus.UpdateSubmitted
-            }); 
+            });
             submitted = true;
             //OnOrderIdChangedEvent(new BrokerageOrderIdChangedEvent(){BrokerId = cachedOrder.BrokerId, OrderId = order.Id});
         });
@@ -209,9 +209,8 @@ public partial class BybitBrokerage
         // or until Algorithm is actually initialized
 
         Connect(null);
-       
     }
-    
+
     /// <summary>
     /// Disconnects the client from the broker's remote servers
     /// </summary>

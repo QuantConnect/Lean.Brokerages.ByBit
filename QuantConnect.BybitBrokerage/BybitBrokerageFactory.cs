@@ -43,9 +43,9 @@ namespace QuantConnect.BybitBrokerage
             { "bybit-api-key", Config.Get("bybit-api-key") },
             { "bybit-api-url", Config.Get("bybit-api-url") },
             { "bybit-websocket-url", Config.Get("bybit-websocket-url") },
-            
+
             // load holdings if available
-            { "live-holdings", Config.Get("live-holdings")},
+            { "live-holdings", Config.Get("live-holdings") },
         };
 
         /// <summary>
@@ -54,8 +54,10 @@ namespace QuantConnect.BybitBrokerage
         public BybitBrokerageFactory() : base(typeof(BybitBrokerage))
         {
         }
-        
-        protected BybitBrokerageFactory(Type brokerageType) : base(brokerageType){}
+
+        protected BybitBrokerageFactory(Type brokerageType) : base(brokerageType)
+        {
+        }
 
         /// <summary>
         /// Gets a brokerage model that can be used to model this brokerage's unique behaviors
@@ -82,6 +84,7 @@ namespace QuantConnect.BybitBrokerage
                 // if we had errors then we can't create the instance
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
+
             var agg = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
@@ -91,7 +94,8 @@ namespace QuantConnect.BybitBrokerage
             return brokerage;
         }
 
-        protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm, IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl)
+        protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm,
+            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl)
         {
             return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job);
         }

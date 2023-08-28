@@ -6,6 +6,5 @@ public class BybitCoinBalances
 {
     public Enums.AccountType AccountType { get; set; }
     public string MemberId { get; set; }
-    [JsonProperty("balance")]
-    public BybitCoinBalance[] Balances { get; set; }
+    [JsonProperty("balance")] public BybitCoinBalance[] Balances { get; set; }
 }

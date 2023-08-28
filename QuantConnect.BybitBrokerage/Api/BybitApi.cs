@@ -5,20 +5,23 @@ using System.Security.Cryptography;
 using System.Text;
 using QuantConnect.Brokerages;
 using QuantConnect.Securities;
+using QuantConnect.Util;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
 public class BybitApi : IDisposable
-{    
+{
     private readonly HMACSHA256 _hmacsha256;
     private readonly string _apiKey;
     private readonly RestClient _restClient;
+    private readonly RateGate _rateGate;
 
     public BybitMarketApiClient Market { get; }
     public BybitAccountApiClient Account { get; }
     public BybitPositionApiClient Position { get; }
     public BybitTradeApiClient Trade { get; }
+
     public BybitApi(
         ISymbolMapper symbolMapper,
         ISecurityProvider securityProvider,
@@ -29,15 +32,21 @@ public class BybitApi : IDisposable
         _restClient = new RestClient(restApiUrl);
         _apiKey = apiKey;
         _hmacsha256 = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret ?? string.Empty));
+        //Todo this limit is variable and based on the vip status, how to do that in the best way? The range is 10/s -> 300/s
+        _rateGate = new RateGate(10, Time.OneSecond);
 
         var apiPrefix = "/v5";
 
-        Market = new BybitMarketApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
-        Account = new BybitAccountApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
-        Position = new BybitPositionApiClient(symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
-        Trade = new BybitTradeApiClient(Market, symbolMapper, apiPrefix, _restClient,securityProvider, AuthenticateRequest);
-        
+        Market = new BybitMarketApiClient(symbolMapper, apiPrefix, securityProvider, ExecuteRequest,
+            AuthenticateRequest);
+        Account = new BybitAccountApiClient(symbolMapper, apiPrefix, securityProvider, ExecuteRequest,
+            AuthenticateRequest);
+        Position = new BybitPositionApiClient(symbolMapper, apiPrefix, securityProvider, ExecuteRequest,
+            AuthenticateRequest);
+        Trade = new BybitTradeApiClient(Market, symbolMapper, apiPrefix, securityProvider,ExecuteRequest,
+            AuthenticateRequest);
     }
+
     public object AuthenticateWebSocket()
     {
         var expires = DateTimeOffset.UtcNow.AddSeconds(10).ToUnixTimeMilliseconds();
@@ -57,7 +66,8 @@ public class BybitApi : IDisposable
 
     public void Dispose()
     {
-        _hmacsha256.Dispose();
+        _hmacsha256.DisposeSafely();
+        _rateGate.DisposeSafely();
     }
 
     private void AuthenticateRequest(IRestRequest request)
@@ -71,9 +81,8 @@ public class BybitApi : IDisposable
                 .ToArray();
 
             sign = string.Join("&", queryParams);
-            
-
-        }else if (request.Method == Method.POST)
+        }
+        else if (request.Method == Method.POST)
         {
             var body = request.Parameters.Single(x => x.Type == ParameterType.RequestBody).Value;
             sign = (string)body;
@@ -82,7 +91,7 @@ public class BybitApi : IDisposable
         {
             throw new NotSupportedException();
         }
-        
+
         var nonce = GetNonce();
         var sToSign = $"{nonce}{_apiKey}{sign}";
         var signed = Sign(sToSign, _hmacsha256);
@@ -91,6 +100,13 @@ public class BybitApi : IDisposable
         request.AddHeader("X-BAPI-TIMESTAMP", nonce);
         request.AddHeader("X-BAPI-SIGN-TYPE", "2");
     }
+
+    private IRestResponse ExecuteRequest(IRestRequest request)
+    {
+        _rateGate.WaitToProceed();
+        return _restClient.Execute(request);
+    }
+
     private static string Sign(string queryString, HMACSHA256 hmacsha256)
     {
         var messageBytes = Encoding.UTF8.GetBytes(queryString);
@@ -109,5 +125,4 @@ public class BybitApi : IDisposable
     {
         return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
     }
-    
 }

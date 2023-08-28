@@ -48,16 +48,17 @@ public partial class BybitBrokerage
     public void SetJob(LiveNodePacket job)
     {
         var aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
-            Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"), forceTypeNameOnExisting: false);
-    
+            Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
+            forceTypeNameOnExisting: false);
+
         SetJobInit(job, aggregator);
-    
+
         if (!IsConnected)
         {
             Connect();
         }
     }
-    
+
     protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
     {
         Initialize(
@@ -73,5 +74,4 @@ public partial class BybitBrokerage
             Market.Bybit
         );
     }
-    
 }

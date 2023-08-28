@@ -12,7 +12,7 @@ namespace QuantConnect.BybitBrokerage.Api;
 
 public class BybitMarketApiClient : BybitRestApiClient
 {
-    public BybitMarketApiClient(ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
+    public BybitMarketApiClient(ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, Func<IRestRequest, IRestResponse> executeRequest, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, securityProvider, executeRequest,requestAuthenticator)
     {
     }
     

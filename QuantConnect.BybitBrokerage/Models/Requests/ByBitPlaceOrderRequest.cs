@@ -19,7 +19,7 @@ public class ByBitPlaceOrderRequest
     /// Order type
     /// </summary>
     public OrderType OrderType { get; set; }
-    
+
     /// <summary>
     /// Valid for spot only. Order,tpslOrder, StopOrder. If not passed, Order by default
     /// </summary>
@@ -48,9 +48,11 @@ public class ByBitPlaceOrderRequest
 
     [JsonConverter(typeof(BybitDecimalStringConverter))]
     public decimal? BasePrice { get; set; }
+
     [JsonConverter(typeof(BybitDecimalStringConverter))]
 
     public decimal? TriggerPrice { get; set; }
+
     public TriggerType? TriggerBy { get; set; }
 
 
@@ -78,7 +80,6 @@ public class ByBitPlaceOrderRequest
 
     /// <summary>
     /// Stop-loss price, only valid when positions are opened.
-
     /// </summary>
     ///     [JsonConverter(typeof(BybitDecimalStringConverter))]
     [JsonConverter(typeof(BybitDecimalStringConverter))]
@@ -98,19 +99,14 @@ public class ByBitPlaceOrderRequest
     public bool? ReduceOnly { get; set; }
     public bool? CloseOnTrigger { get; set; }
     public bool? Mmp { get; set; }
-    
-    [JsonProperty("positionIdx")]
-    public int? PositionIndex
-    {
-        get;
-        set;
-    }
+
+    [JsonProperty("positionIdx")] public int? PositionIndex { get; set; }
 
     [JsonConverter(typeof(BybitDecimalStringConverter))]
     public decimal? TpLimitPrice { get; set; }
+
     public decimal? SlLimitPrice { get; set; }
     public OrderType? TpOrderType { get; set; }
     public OrderType? SlOrderType { get; set; }
-    [JsonProperty("'tpslMode")]
-    public string TpSlMode { get; set; }
+    [JsonProperty("'tpslMode")] public string TpSlMode { get; set; }
 }

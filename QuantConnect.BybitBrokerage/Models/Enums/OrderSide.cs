@@ -2,5 +2,6 @@
 
 public enum OrderSide
 {
-    Buy, Sell
+    Buy,
+    Sell
 }

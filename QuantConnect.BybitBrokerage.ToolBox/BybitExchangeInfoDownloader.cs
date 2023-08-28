@@ -54,7 +54,6 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
          
                 foreach (var symbol in symbols)
                 {
-                    //if (!symbol.UnifiedMarginTrade) continue;
                     if (!symbol.InstrumentInfo.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase)) continue;
                     yield return GetInstrumentInfoString(symbol.InstrumentInfo, symbol.SecurityType);
                 }

@@ -2,7 +2,7 @@
 
 public enum PositionStatus
 {
-    Normal, 
+    Normal,
     Liq,
     Adl,
 }

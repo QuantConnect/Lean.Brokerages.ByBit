@@ -10,7 +10,9 @@ public class BybitInstrumentInfo
     public string Status { get; set; }
     public string BaseCoin { get; set; }
     public string QuoteCoin { get; set; }
+
     public string SettleCoin { get; set; }
+
     //public string OptionsType { get; set; }
     public string LaunchTime { get; set; }
     public string DeliveryTime { get; set; }
@@ -19,8 +21,9 @@ public class BybitInstrumentInfo
     public ByBitPriceFilter PriceFilter { get; set; }
     public ByBitLotSizeFilter LotSizeFilter { get; set; }
     public ByBitLeverageFilter LeverageFilter { get; set; }
+
     [JsonConverter(typeof(ByBitBoolConverter))]
     public bool UnifiedMarginTrade { get; set; }
+
     public int FundingInterval { get; set; }
-    
 }

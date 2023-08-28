@@ -10,6 +10,7 @@ using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.BybitBrokerage.Models.Messages;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
@@ -83,29 +84,28 @@ public partial class BybitBrokerage
         foreach (var tradeUpdate in tradeUpdates)
         {
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(tradeUpdate.OrderId).FirstOrDefault();
-             if (leanOrder == null) continue;
+            if (leanOrder == null) continue;
 
-             if (tradeUpdate.ExecutionType is not (ExecutionType.Trade))
-             {
-                 Log.Trace(jObject.ToString());
-                 continue; //todo verify
-             }
-             
-             var symbol = tradeUpdate.Symbol;
-             var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSupportedSecurityType(), MarketName);
-             var status = tradeUpdate.QuantityRemaining.GetValueOrDefault(0) == 0
+            if (tradeUpdate.ExecutionType is not (ExecutionType.Trade))
+            {
+                Log.Trace(jObject.ToString());
+                continue; //todo verify
+            }
+
+            var symbol = tradeUpdate.Symbol;
+            var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSupportedSecurityType(), MarketName);
+            var status = tradeUpdate.QuantityRemaining.GetValueOrDefault(0) == 0
                 ? QuantConnect.Orders.OrderStatus.Filled
                 : QuantConnect.Orders.OrderStatus.PartiallyFilled;
-             
+
             var fee = OrderFee.Zero;
             if (tradeUpdate.ExecutionFee != 0)
             {
-                //todo validate
                 var currency = Category switch
                 {
                     BybitAccountCategory.Linear => "USDT",
                     BybitAccountCategory.Inverse => GetBaseCurrency(symbol),
-                    BybitAccountCategory.Spot => GetSpotFeeCurrency(leanSymbol,tradeUpdate),
+                    BybitAccountCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
                     _ => throw new NotSupportedException($"category {Category.ToString()} not implemented")
                 };
                 fee = new OrderFee(new CashAmount(tradeUpdate.ExecutionFee, currency));
@@ -119,7 +119,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionPrice,
                 tradeUpdate.ExecutionQuantity,
                 fee);
-            
+
             TestFix(leanOrder.Id, status);
             OnOrderEvent(orderEvent);
         }
@@ -149,18 +149,19 @@ public partial class BybitBrokerage
         foreach (var order in orders)
         {
             //We're not interested in order executions here as HandleOrderExecution is taking care of this
-            if(order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
-            
+            if (order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
+
             //This should imo only be one order but the test OrderProvider is cloning them
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(order.OrderId).FirstOrDefault();
             if (leanOrder == null) continue;
 
             var newStatus = ConvertOrderStatus(order.Status);
-            if(newStatus == leanOrder.Status) continue;
-            
-            Log.Trace($"Order status changed from: {leanOrder.Status.ToStringInvariant()} to: {newStatus.ToStringInvariant()}");
-            
-            var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero){Status = newStatus};
+            if (newStatus == leanOrder.Status) continue;
+
+            Log.Trace(
+                $"Order status changed from: {leanOrder.Status.ToStringInvariant()} to: {newStatus.ToStringInvariant()}");
+
+            var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             TestFix(leanOrder.Id, newStatus);
             OnOrderEvent(orderEvent);
         }
@@ -168,7 +169,7 @@ public partial class BybitBrokerage
 
     //Todo: This needs to be removed, but for now it fixes the issues I was facing with the tests expecting the status of the original order object being
     //      updated. While the OrderProvider being used in the test returns copies of each order.
-    private void TestFix(int orderId,Orders.OrderStatus status)
+    private void TestFix(int orderId, Orders.OrderStatus status)
     {
         OrderProvider.GetOrders(x =>
         {
@@ -182,7 +183,7 @@ public partial class BybitBrokerage
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
         }).ToArray();
     }
-    
+
     private void OnDataMessage(WebSocketMessage webSocketMessage)
     {
         var data = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
@@ -236,7 +237,7 @@ public partial class BybitBrokerage
 
     private void HandleTradeMessage(JToken message)
     {
-        var trades = message.ToObject<BybitDataMessage<BybitWSTradeData[]>>();
+        var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
         foreach (var trade in trades.Data)
         {
             EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
@@ -298,7 +299,7 @@ public partial class BybitBrokerage
     private void Send(IWebSocket webSocket, object obj)
     {
         var json = JsonConvert.SerializeObject(obj);
-        
+
         Log.Trace("Send: " + json);
         webSocket.Send(json);
     }
@@ -349,38 +350,47 @@ public partial class BybitBrokerage
 
         return true;
     }
-    
+
     private void Connect(BybitApi api)
     {
         if (WebSocket == null) return;
+
+
         WebSocket.Initialize(_privateWebSocketUrl);
         if (api == null)
         {
             WebSocket.Open += OnOpenInstance;
-
         }
         else
         {
             WebSocket.Open += OnOpen;
         }
 
+        //todo maybe there is a better place to validate this
+        var accountInfo = (api ?? ApiClient).Account.GetAccountInfo();
+        if (accountInfo.UnifiedMarginStatus != UnifiedMarginStatus.UnifiedTrade)
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                "Only unified margin trade accounts are supported"));
+
+
         void OnOpenInstance(object sender, EventArgs e)
         {
             OnPrivateWSConnected(ApiClient);
         }
+
         void OnOpen(object sender, EventArgs e)
         {
             WebSocket.Open -= OnOpen;
             OnPrivateWSConnected(api);
             WebSocket.Open += OnOpenInstance;
         }
+
         ConnectSync();
     }
 
     private void OnPrivateWSConnected(BybitApi api)
     {
         Send(WebSocket, api.AuthenticateWebSocket());
-        Send(WebSocket, new { op = "subscribe", args = new[] { "order","execution" } });
+        Send(WebSocket, new { op = "subscribe", args = new[] { "order", "execution" } });
     }
-
 }

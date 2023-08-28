@@ -11,7 +11,7 @@ namespace QuantConnect.BybitBrokerage.Api;
 public class BybitPositionApiClient : BybitRestApiClient
 {
     
-    public BybitPositionApiClient(ISymbolMapper symbolMapper, string apiPrefix, IRestClient restClient, ISecurityProvider securityProvider, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, restClient, securityProvider, requestAuthenticator)
+    public BybitPositionApiClient(ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, Func<IRestRequest, IRestResponse> executeRequest, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, securityProvider,executeRequest, requestAuthenticator)
     {
     }
     
@@ -28,7 +28,7 @@ public class BybitPositionApiClient : BybitRestApiClient
         var endpoint = $"{ApiPrefix}/position/list";
         var request = new RestRequest(endpoint);
         request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
-        request.AddQueryParameter("settleCoin", "USDT"); //todo
+        request.AddQueryParameter("settleCoin", "USDT"); //todo, needs to be changed for inverse
         request.AddQueryParameter("limit", "200");
         if (cursor != null)
         {

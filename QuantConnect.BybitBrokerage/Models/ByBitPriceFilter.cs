@@ -6,4 +6,3 @@ public class ByBitPriceFilter
     public string MaxPrice { get; set; }
     public string TickSize { get; set; }
 }
-

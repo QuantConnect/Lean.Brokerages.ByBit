@@ -3,5 +3,6 @@
 public enum PositionSide
 {
     None,
-    Buy, Sell
+    Buy,
+    Sell
 }

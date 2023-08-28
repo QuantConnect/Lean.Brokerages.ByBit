@@ -7,7 +7,6 @@ namespace QuantConnect.BybitBrokerage;
 
 public class BybitWebSocketWrapper : WebSocketClientWrapper
 {
-
     private Timer _pingTimer;
     public string ConnectionId { get; }
 
@@ -18,7 +17,7 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
 
     private void PingTimerElapsed(object sender, ElapsedEventArgs e)
     {
-       Send("{\"op\":\"ping\"}");
+        Send("{\"op\":\"ping\"}");
     }
 
     protected override void OnOpen()
@@ -41,6 +40,4 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
 
         base.OnClose(e);
     }
-    
-    
 }

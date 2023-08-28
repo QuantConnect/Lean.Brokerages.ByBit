@@ -2,12 +2,12 @@
 using Newtonsoft.Json;
 using QuantConnect.BybitBrokerage.Converters;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.BybitBrokerage.Models.Messages;
 
 public class BybitDataMessage<T>
 {
     public string Topic { get; set; }
-    public BybitWSMessageType Type { get; set; }
+    public BybitMessageType Type { get; set; }
 
     [JsonProperty("ts")]
     [JsonConverter(typeof(BybitTimeConverter))]

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models.Enums;
@@ -8,18 +7,17 @@ using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
-using QuantConnect.Orders;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
-using QuantConnect.Statistics;
 using QuantConnect.Util;
 using HistoryRequest = QuantConnect.Data.HistoryRequest;
 using OrderStatus = QuantConnect.Orders.OrderStatus;
-using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
-using Timer = System.Timers.Timer;
 
 namespace QuantConnect.BybitBrokerage;
 
+//todo margin
+//todo open interest?
+//todo funding rate?
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 {
@@ -28,8 +26,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private LiveNodePacket _job;
     private string _privateWebSocketUrl;
     private Lazy<BybitApi> _apiClientLazy;
-
-    //private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
@@ -41,7 +37,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <summary>
     /// Returns true if we're currently connected to the broker
     /// </summary>
-    public override bool IsConnected => _apiClientLazy?.IsValueCreated != true ||  WebSocket?.IsOpen == true;
+    public override bool IsConnected => _apiClientLazy?.IsValueCreated != true || WebSocket?.IsOpen == true;
 
     /// <summary>
     /// Parameterless constructor for brokerage
@@ -69,8 +65,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Actual market name</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName = Market.Bybit)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null,orderProvider, securityProvider, aggregator, job, marketName)
+        IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator,
+        LiveNodePacket job, string marketName = Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null, orderProvider, securityProvider, aggregator, job,
+            marketName)
     {
     }
 
@@ -86,7 +84,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="job">The live job packet</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm,algorithm?.Portfolio?.Transactions,algorithm?.Portfolio, aggregator, job, Market.Bybit)
+        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, algorithm?.Portfolio?.Transactions,
+            algorithm?.Portfolio, aggregator, job, Market.Bybit)
     {
     }
 
@@ -103,7 +102,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="orderProvider"></param>
     /// <param name="marketName">Actual market name</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job, string marketName)
+        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
+        IDataAggregator aggregator, LiveNodePacket job, string marketName)
         : base(marketName)
     {
         Initialize(
@@ -150,15 +150,16 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 $"{request.Symbol.SecurityType} security type not supported, no history returned"));
             yield break;
         }
-        
+
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
 
         if (request.Resolution == Resolution.Tick)
         {
-            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc, request.EndTimeUtc);
+            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc,
+                request.EndTimeUtc);
             foreach (var tick in res)
             {
-                yield return new Tick(tick.Time, request.Symbol, string.Empty,MarketName, 
+                yield return new Tick(tick.Time, request.Symbol, string.Empty, MarketName,
                     tick.Size * (tick.Side == OrderSide.Buy ? 1m : -1m), tick.price);
             }
 
@@ -166,7 +167,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
 
         var client = ApiClient ??
-                     GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null);
+                     GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null,
+                         null);
 
         var kLines = client.Market
             .GetKLines(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
@@ -181,7 +183,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     }
 
     protected void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
-        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator, LiveNodePacket job,
+        IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
+        IDataAggregator aggregator, LiveNodePacket job,
         string marketName)
     {
         if (IsInitialized)
@@ -212,13 +215,13 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             OnDataMessage,
             TimeSpan.FromDays(1));
         SubscriptionManager = subscriptionManager;
-        
+
         // can be null, if BybitBrokerage is used as DataQueueHandler only
         if (_algorithm != null)
         {
             _apiClientLazy = new Lazy<BybitApi>(() =>
             {
-                var client =  GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret);
+                var client = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret);
                 Connect(client);
                 return client;
             });
@@ -248,11 +251,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         // NOP
         return true;
     }
-    
-    protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider, string restApiUrl, string apiKey, string apiSecret)
+
+    protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
+        string restApiUrl, string apiKey, string apiSecret)
     {
         var url = Config.Get("bybit-api-url", "https://api.bybit.com");
-        return new BybitApi(symbolMapper,securityProvider, apiKey, apiSecret, restApiUrl);
+        return new BybitApi(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
     }
 
     public override void Dispose()
@@ -264,7 +268,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         base.Dispose();
     }
 
-    public static OrderStatus ConvertOrderStatus(Models.Enums.OrderStatus orderStatus)
+    private static OrderStatus ConvertOrderStatus(Models.Enums.OrderStatus orderStatus)
     {
         switch (orderStatus)
         {
@@ -279,7 +283,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 return OrderStatus.PartiallyFilled;
             case Models.Enums.OrderStatus.Filled:
                 return OrderStatus.Filled;
-            case Models.Enums.OrderStatus.Cancelled:           
+            case Models.Enums.OrderStatus.Cancelled:
             case Models.Enums.OrderStatus.Deactivated:
             case Models.Enums.OrderStatus.PartiallyFilledCanceled:
                 return OrderStatus.Canceled;
@@ -287,10 +291,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 return OrderStatus.Invalid;
             default:
                 throw new ArgumentOutOfRangeException(nameof(orderStatus), orderStatus, null);
-        }
-
-        {
-            
         }
     }
 }

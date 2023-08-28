@@ -4,7 +4,7 @@ public enum CancelType
 {
     CancelByUser,
     CancelByReduceOnly,
-    CancelByPrepareLiq ,
+    CancelByPrepareLiq,
     CancelAllBeforeLiq,
     CancelByPrepareAdl,
     CancelAllBeforeAdl,
@@ -12,7 +12,7 @@ public enum CancelType
     CancelByTpSlTsClear,
     CancelByPzSideCh,
     CancelBySmp,
-    
+
     //options?
     CancelBySettle,
     CancelByCannotAffordOrderCost,

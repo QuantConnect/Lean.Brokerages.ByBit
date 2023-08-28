@@ -36,6 +36,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
     {
         private readonly string _market;
         private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
+
+        protected virtual SecurityType SupportedSecurityType => SecurityType.Crypto;
         
 
         public BybitBrokerageDownloader(string market = Market.Bybit)
@@ -109,7 +111,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         /// <returns></returns>
         private Symbol GetSymbol(string ticker)
         {
-            return _symbolMapper.GetLeanSymbol(ticker, SecurityType.CryptoFuture, _market);
+            return _symbolMapper.GetLeanSymbol(ticker, SupportedSecurityType, _market);
         }
 
         public static void DownloadHistory(List<string> tickers, string resolution, string securityType,
@@ -190,6 +192,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
     public class BybitFuturesBrokerageDownloader : BybitBrokerageDownloader
     {
+        protected override SecurityType SupportedSecurityType => SecurityType.CryptoFuture;
+
         public BybitFuturesBrokerageDownloader(string market = Market.Bybit) : base(market)
         {
         }

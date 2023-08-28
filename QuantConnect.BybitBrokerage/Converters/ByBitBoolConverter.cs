@@ -11,15 +11,17 @@ public class ByBitBoolConverter : JsonConverter
         {
             return Nullable.GetUnderlyingType(objectType) == typeof(bool);
         }
+
         return objectType == typeof(bool);
     }
-    
+
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
     {
         throw new NotSupportedException();
     }
 
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
+        JsonSerializer serializer)
     {
         switch (reader.Value?.ToString()?.ToLower().Trim())
         {
@@ -35,7 +37,7 @@ public class ByBitBoolConverter : JsonConverter
                 return false;
         }
 
-        
+
         return new JsonSerializer().Deserialize(reader, objectType);
     }
 

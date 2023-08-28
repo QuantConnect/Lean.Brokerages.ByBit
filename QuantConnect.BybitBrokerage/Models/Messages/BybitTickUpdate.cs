@@ -3,13 +3,14 @@ using Newtonsoft.Json;
 using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models.Enums;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.BybitBrokerage.Models.Messages;
 
-public class BybitWSTradeData
+public class BybitTickUpdate
 {
     [JsonConverter(typeof(BybitTimeConverter))]
+    [JsonProperty("T")]
+    public DateTime Time { get; set; }
 
-    [JsonProperty("T")] public DateTime Time { get; set; }
     [JsonProperty("s")] public string Symbol { get; set; }
     [JsonProperty("S")] public OrderSide Side { get; set; }
 

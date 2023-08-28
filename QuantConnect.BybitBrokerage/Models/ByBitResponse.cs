@@ -26,8 +26,8 @@ namespace QuantConnect.BybitBrokerage.Models
         [JsonProperty("extCode")] public string ExtCode { get; set; }
         [JsonProperty("retExtInfo")] public object ExtendedInfo { get; set; }
         public T Result { get; set; }
+
         [JsonConverter(typeof(BybitTimeConverter))]
         public DateTime Time { get; set; }
-
     }
 }

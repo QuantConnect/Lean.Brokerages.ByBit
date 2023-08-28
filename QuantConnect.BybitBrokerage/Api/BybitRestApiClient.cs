@@ -31,13 +31,14 @@ public abstract class BybitRestApiClient
     };
 
     
-    private readonly IRestClient _restClient;
     private readonly Action<IRestRequest> _requestAuthenticator;
 
     protected string ApiPrefix { get; }
     protected ISymbolMapper SymbolMapper { get; }
     protected ISecurityProvider SecurityProvider { get; }
     
+    protected Func<IRestRequest, IRestResponse> ExecuteRequest { get; }
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BybitRestApiClient"/> class.
@@ -49,13 +50,13 @@ public abstract class BybitRestApiClient
     protected BybitRestApiClient(
         ISymbolMapper symbolMapper,
         string apiPrefix,
-        IRestClient restClient,
         ISecurityProvider securityProvider,
+        Func<IRestRequest, IRestResponse> executeRequest,
         Action<IRestRequest> requestAuthenticator)
     {
         SymbolMapper = symbolMapper;
         SecurityProvider = securityProvider;
-        _restClient = restClient;
+        ExecuteRequest = executeRequest;
         _requestAuthenticator = requestAuthenticator;
         ApiPrefix = apiPrefix;
     }
@@ -114,12 +115,7 @@ public abstract class BybitRestApiClient
 
         return byBitResponse.Result;
     }
-
-    protected IRestResponse ExecuteRequest(IRestRequest request)
-    {
-        //todo rate limit
-        return _restClient.Execute(request);
-    }
+    
 
     protected void AuthenticateRequest(IRestRequest request)
     {

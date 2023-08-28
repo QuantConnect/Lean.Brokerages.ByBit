@@ -1,8 +1,6 @@
-﻿using System;
-using System.Runtime.Serialization;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.BybitBrokerage.Models.Messages;
 
 public class BybitMessage
 {

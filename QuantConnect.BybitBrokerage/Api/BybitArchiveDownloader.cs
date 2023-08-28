@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Logging;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
@@ -62,7 +63,8 @@ public class BybitArchiveDownloader
                 }
                 else if(category is BybitAccountCategory.Inverse or BybitAccountCategory.Linear)
                 {
-                    yield return ParseFuturesTick(line);
+                    var tick = ParseFuturesTick(line);
+                    if (tick != null) yield return tick;
                 }
                 else
                 {
@@ -85,20 +87,30 @@ public class BybitArchiveDownloader
         tick.Symbol = symbol;
         return tick;
     }
-    private BybitHistTick ParseFuturesTick(string line)
+    private BybitHistTick? ParseFuturesTick(string line)
     {
         var tick = new BybitHistTick();
-        var split = line.Split(',');
-        tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0], CultureInfo.InvariantCulture));
-        tick.Symbol = split[1];
-        tick.Side = (OrderSide)Enum.Parse(typeof(OrderSide), split[2]);
-        tick.Size = decimal.Parse(split[3], CultureInfo.InvariantCulture);
-        tick.price = decimal.Parse(split[4], CultureInfo.InvariantCulture);
-        tick.TickDirection = (TickDirection)Enum.Parse(typeof(TickDirection), split[5]);
-        tick.TradeId = Guid.Parse(split[6]);
-        //tick.GrossValue = decimal.Parse(split[7], CultureInfo.InvariantCulture);
-        //tick.HomeNotional = decimal.Parse(split[8], CultureInfo.InvariantCulture);
-        //tick.ForeignNotional = decimal.Parse(split[9], CultureInfo.InvariantCulture);
+        try
+        {
+
+            var split = line.Split(',');
+            tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0]));
+            tick.Symbol = split[1];
+            tick.Side = (OrderSide)Enum.Parse(typeof(OrderSide), split[2]);
+            tick.Size = decimal.Parse(split[3], NumberStyles.Float, CultureInfo.InvariantCulture);
+            tick.price = decimal.Parse(split[4], CultureInfo.InvariantCulture);
+            tick.TickDirection = (TickDirection)Enum.Parse(typeof(TickDirection), split[5]);
+            tick.TradeId = Guid.Parse(split[6]);
+            //tick.GrossValue = decimal.Parse(split[7], CultureInfo.InvariantCulture);
+            //tick.HomeNotional = decimal.Parse(split[8], CultureInfo.InvariantCulture);
+            //tick.ForeignNotional = decimal.Parse(split[9], CultureInfo.InvariantCulture);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,$"Error while parsing tick line: '{line}'");
+            return null;
+        }
+
         return tick;
     }
     public class BybitHistTick
