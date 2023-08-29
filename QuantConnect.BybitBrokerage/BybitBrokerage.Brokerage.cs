@@ -66,17 +66,14 @@ public partial class BybitBrokerage
     public override List<Holding> GetAccountHoldings()
     {
         var holdings = ApiClient.Position.GetPositions(Category)
-            .Select(x =>
+            .Select(x => new Holding
             {
-                return new Holding()
-                {
-                    Symbol = _symbolMapper.GetLeanSymbol(x.Symbol, GetSupportedSecurityType(), MarketName),
-                    AveragePrice = x.AveragePrice,
-                    Quantity = x.Side == Models.Enums.PositionSide.Buy ? x.Size : x.Size * -1,
-                    MarketValue = x.PositionValue,
-                    UnrealizedPnL = x.UnrealisedPnl,
-                    MarketPrice = x.MarkPrice
-                };
+                Symbol = _symbolMapper.GetLeanSymbol(x.Symbol, GetSupportedSecurityType(), MarketName),
+                AveragePrice = x.AveragePrice,
+                Quantity = x.Side == Models.Enums.PositionSide.Buy ? x.Size : x.Size * -1,
+                MarketValue = x.PositionValue,
+                UnrealizedPnL = x.UnrealisedPnl,
+                MarketPrice = x.MarkPrice
             }).ToList();
         return holdings;
     }
@@ -87,9 +84,9 @@ public partial class BybitBrokerage
     /// <returns>The current cash balance for each currency available for trading</returns>
     public override List<CashAmount> GetCashBalance()
     {
-        return ApiClient.Account.GetWalletBalances(Category).Assets
+        return ApiClient.Account
+            .GetWalletBalances(Category).Assets
             .Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
-        //return new List<CashAmount>();
     }
 
     /// <summary>
@@ -114,7 +111,7 @@ public partial class BybitBrokerage
             order.BrokerId.Add(result.OrderId);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
-                Status = OrderStatus.Submitted //todo submitted to async?
+                Status = OrderStatus.Submitted //todo submitted to async? required at all.. what are that statuses actualy
             });
             submitted = true;
         });
@@ -129,6 +126,11 @@ public partial class BybitBrokerage
     /// <returns>True if the request was made for the order to be updated, false otherwise</returns>
     public override bool UpdateOrder(Order order)
     {
+        if (Category == BybitAccountCategory.Spot)
+        {
+            throw new NotSupportedException("BybitBrokerage.UpdateOrder: Order update not supported for spot. Please cancel and re-create.");
+        }
+
         if (!CanSubscribe(order.Symbol))
         {
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1,
@@ -181,9 +183,9 @@ public partial class BybitBrokerage
                     "Order already canceled or cancellation submitted"));
                 return;
             }
-
-
-            var result = ApiClient.Trade.CancelOrder(Category, order);
+            
+            var result = ApiClient.Trade.CancelOrder(Category, order); ;
+            
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero) { Status = OrderStatus.CancelPending });
             canceled = true;
         });
@@ -221,5 +223,7 @@ public partial class BybitBrokerage
         WebSocket.Close();
     }
 
+    
+    
     #endregion
 }

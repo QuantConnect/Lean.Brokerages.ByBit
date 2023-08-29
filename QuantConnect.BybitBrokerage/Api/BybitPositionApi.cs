@@ -8,10 +8,10 @@ using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
-public class BybitPositionApiClient : BybitRestApiClient
+public class BybitPositionApi : BybitBaseApi
 {
     
-    public BybitPositionApiClient(ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, Func<IRestRequest, IRestResponse> executeRequest, Action<IRestRequest> requestAuthenticator) : base(symbolMapper, apiPrefix, securityProvider,executeRequest, requestAuthenticator)
+    public BybitPositionApi(ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, BybitApiClient apiClient) : base(symbolMapper, apiPrefix, securityProvider, apiClient)
     {
     }
     

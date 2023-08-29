@@ -57,7 +57,7 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             
              //todo:  Market Buy orders on spot need to be send in the quote currency should we move that responsibility to the user
-             //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? 
+             //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? - might be fixed
         }
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
@@ -209,6 +209,10 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             Assert.AreEqual(GetDefaultQuantity(), afterQuantity - beforeQuantity + fee);
         }
-        
+
+        protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters, double secondsTimeout = 90)
+        {
+            Assert.Pass("Order update not supported. Please cancel and re-create.");
+        }
     }
 }

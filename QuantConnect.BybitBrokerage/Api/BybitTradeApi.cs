@@ -14,14 +14,13 @@ using TimeInForce = QuantConnect.BybitBrokerage.Models.Enums.TimeInForce;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
-public class BybitTradeApiClient : BybitRestApiClient
+public class BybitTradeApi : BybitBaseApi
 {
-    private readonly BybitMarketApiClient _marketApiClient;
+    private readonly BybitMarketApi _marketApiClient;
 
-    public BybitTradeApiClient(BybitMarketApiClient marketApiClient, ISymbolMapper symbolMapper, string apiPrefix,ISecurityProvider securityProvider, Func<IRestRequest, IRestResponse> executeRequest,Action<IRestRequest> requestAuthenticator) : base(
-        symbolMapper, apiPrefix, securityProvider,executeRequest, requestAuthenticator)
+    public BybitTradeApi(BybitMarketApi marketApi, ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, BybitApiClient apiClient) : base(symbolMapper, apiPrefix, securityProvider, apiClient)
     {
-        _marketApiClient = marketApiClient;
+        _marketApiClient = marketApi;
     }
 
     public BybitPlaceOrderResponse CancelOrder(BybitAccountCategory category, Order order)

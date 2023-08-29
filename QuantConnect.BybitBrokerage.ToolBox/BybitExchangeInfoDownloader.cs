@@ -38,7 +38,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
         /// <summary>
         /// Get exchange info coma-separated data
-        /// </summary>
+        /// </summary>===
         /// <returns>Enumerable of exchange info for this market</returns>
         public IEnumerable<string> Get()
         {
@@ -46,10 +46,10 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             using var client = new BybitApi(null, null,null, null, apiUrl);
 
             var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
-            var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
+            //var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
             var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitAccountCategory.Spot));
 
-            var symbols = new[] { linear, inverse, spot }
+            var symbols = new[] { linear, spot }
                     .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            
          
                 foreach (var symbol in symbols)

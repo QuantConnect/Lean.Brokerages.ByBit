@@ -18,7 +18,7 @@ using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
-public abstract class BybitRestApiClient 
+public abstract class BybitBaseApi
 {
     protected static readonly JsonSerializerSettings SerializerSettings = new()
     {
@@ -31,34 +31,33 @@ public abstract class BybitRestApiClient
     };
 
     
-    private readonly Action<IRestRequest> _requestAuthenticator;
-
     protected string ApiPrefix { get; }
     protected ISymbolMapper SymbolMapper { get; }
     protected ISecurityProvider SecurityProvider { get; }
     
-    protected Func<IRestRequest, IRestResponse> ExecuteRequest { get; }
+    protected BybitApiClient ApiClient { get; }
 
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BybitRestApiClient"/> class.
+    /// Initializes a new instance of the <see cref="BybitBaseApi"/> class.
     /// </summary>
     /// <param name="symbolMapper">The symbol mapper.</param>
+    /// <param name="apiPrefix"></param>
+    /// <param name="securityProvider"></param>
+    /// <param name="apiClient"></param>
     /// <param name="apiKey">The Binance API key</param>
     /// <param name="restApiUrl">The Bina
     /// nce API rest url</param>
-    protected BybitRestApiClient(
+    protected BybitBaseApi(
         ISymbolMapper symbolMapper,
         string apiPrefix,
         ISecurityProvider securityProvider,
-        Func<IRestRequest, IRestResponse> executeRequest,
-        Action<IRestRequest> requestAuthenticator)
+        BybitApiClient apiClient)
     {
         SymbolMapper = symbolMapper;
         SecurityProvider = securityProvider;
-        ExecuteRequest = executeRequest;
-        _requestAuthenticator = requestAuthenticator;
         ApiPrefix = apiPrefix;
+        ApiClient = apiClient;
     }
 
 
@@ -119,7 +118,12 @@ public abstract class BybitRestApiClient
 
     protected void AuthenticateRequest(IRestRequest request)
     {
-        _requestAuthenticator(request);
+        ApiClient.AuthenticateRequest(request);
+    }
+
+    protected IRestResponse ExecuteRequest(IRestRequest request)
+    {
+        return ApiClient.ExecuteRequest(request);
     }
 
     protected virtual BybitAccountType BybitAccountType(BybitAccountCategory category) =>

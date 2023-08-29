@@ -120,6 +120,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionQuantity,
                 fee);
 
+            Log.Trace($"Orderstatus changed {leanOrder.Status.ToStringInvariant()} => {status.ToStringInvariant()} from {tradeUpdate.ExecutionType?.ToStringInvariant()}");
             TestFix(leanOrder.Id, status);
             OnOrderEvent(orderEvent);
         }
@@ -158,8 +159,6 @@ public partial class BybitBrokerage
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
-            Log.Trace(
-                $"Order status changed from: {leanOrder.Status.ToStringInvariant()} to: {newStatus.ToStringInvariant()}");
 
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             TestFix(leanOrder.Id, newStatus);
@@ -368,10 +367,14 @@ public partial class BybitBrokerage
 
         //todo maybe there is a better place to validate this
         var accountInfo = (api ?? ApiClient).Account.GetAccountInfo();
-        if (accountInfo.UnifiedMarginStatus != UnifiedMarginStatus.UnifiedTrade)
+        if (accountInfo.UnifiedMarginStatus is not (UnifiedMarginStatus.UnifiedTrade or UnifiedMarginStatus.UTAPro))
+        {
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
                 "Only unified margin trade accounts are supported"));
+            return;
+        }
 
+        
 
         void OnOpenInstance(object sender, EventArgs e)
         {
@@ -390,6 +393,7 @@ public partial class BybitBrokerage
 
     private void OnPrivateWSConnected(BybitApi api)
     {
+        
         Send(WebSocket, api.AuthenticateWebSocket());
         Send(WebSocket, new { op = "subscribe", args = new[] { "order", "execution" } });
     }
