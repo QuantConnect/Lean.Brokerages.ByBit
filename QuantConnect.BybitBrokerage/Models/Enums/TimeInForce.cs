@@ -4,5 +4,6 @@ public enum TimeInForce
 {
     GTC,
     IOC,
-    FOK
+    FOK,
+    PostOnly
 }

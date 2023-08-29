@@ -135,13 +135,15 @@ public class BybitTradeApiClient : BybitRestApiClient
             Quantity = Math.Abs(order.Quantity),
             Symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol),
             PositionIndex = 0,
-            OrderFilter = GetOrderFilter(category, order), //not sure if this is needed when placing the order, but it also doesn't hurt
-            ReduceOnly = properties?.ReduceOnly
+            OrderFilter = GetOrderFilter(category, order),
+            ReduceOnly = properties?.ReduceOnly,
         };
         
         //todo close on trigger
-        //todo time in force
-        //todo post only
+        if (IsLimitType(order.Type))
+        {
+            req.TimeInForce = properties?.PostOnly == true ? TimeInForce.PostOnly : null;
+        }
         switch (order)
         {
             case LimitOrder limitOrder:
@@ -216,6 +218,11 @@ public class BybitTradeApiClient : BybitRestApiClient
         return tickerPrice;
     }
 
+    private bool IsLimitType(QuantConnect.Orders.OrderType orderType)
+    {
+        return orderType is (Orders.OrderType.Limit or Orders.OrderType.StopLimit or Orders.OrderType.LimitIfTouched);
+    }
+    
     private static OrderFilter? GetOrderFilter(BybitAccountCategory category, Order order)
     {
         if (category != BybitAccountCategory.Spot) return null;
