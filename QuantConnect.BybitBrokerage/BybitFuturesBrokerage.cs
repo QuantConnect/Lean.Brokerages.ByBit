@@ -19,7 +19,6 @@ using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
-using QuantConnect.Securities.Crypto;
 using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage

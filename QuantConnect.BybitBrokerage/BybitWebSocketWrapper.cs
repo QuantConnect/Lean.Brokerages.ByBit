@@ -1,7 +1,6 @@
 using System;
 using System.Timers;
 using QuantConnect.Brokerages;
-using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage;
 

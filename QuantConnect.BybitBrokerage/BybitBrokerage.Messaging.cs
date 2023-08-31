@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -11,7 +10,6 @@ using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.BybitBrokerage.Models.Messages;
-using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
@@ -246,7 +244,7 @@ public partial class BybitBrokerage
 
     private void HandleOpMessage(JToken message)
     {
-        var dataMessage = message.ToObject<BybitMessage>();
+        var dataMessage = message.ToObject<BybitOperationResponseMessage>();
         if (dataMessage.Operation == "subscribe" && dataMessage.Success)
         {
             //todo does the subscription needs to be confirmed?

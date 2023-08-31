@@ -15,8 +15,6 @@
 
 using NUnit.Framework;
 using QuantConnect.Brokerages;
-using QuantConnect.Configuration;
-using QuantConnect.Util;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 

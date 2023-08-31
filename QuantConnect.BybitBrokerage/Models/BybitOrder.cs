@@ -19,12 +19,12 @@ public class BybitOrder
     /// Client order id
     /// </summary>
     [JsonProperty("orderLinkId")]
-    public string? ClientOrderId { get; set; }
+    public string ClientOrderId { get; set; }
 
     /// <summary>
     /// Block trade id
     /// </summary>
-    public string? BlockTradeId { get; set; }
+    public string BlockTradeId { get; set; }
 
     /// <summary>
     /// Symbol
@@ -73,7 +73,7 @@ public class BybitOrder
     /// <summary>
     /// Reject reason
     /// </summary>
-    public string? RejectReason { get; set; }
+    public string RejectReason { get; set; }
 
     /// <summary>
     /// Average fill pricec

@@ -16,7 +16,6 @@
 using NUnit.Framework;
 using System.Threading;
 using QuantConnect.Data;
-using QuantConnect.Tests;
 using QuantConnect.Logging;
 using QuantConnect.Data.Market;
 

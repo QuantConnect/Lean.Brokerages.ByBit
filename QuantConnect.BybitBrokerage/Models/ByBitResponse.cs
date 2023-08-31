@@ -19,14 +19,39 @@ using QuantConnect.BybitBrokerage.Converters;
 
 namespace QuantConnect.BybitBrokerage.Models
 {
+    /// <summary>
+    /// Bybits default http response message
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class ByBitResponse<T>
     {
-        [JsonProperty("retCode")] public int ReturnCode { get; set; }
-        [JsonProperty("retMsg")] public string ReturnMessage { get; set; }
-        [JsonProperty("extCode")] public string ExtCode { get; set; }
-        [JsonProperty("retExtInfo")] public object ExtendedInfo { get; set; }
+        /// <summary>
+        /// Success/Error code
+        /// </summary>
+        [JsonProperty("retCode")]
+        public int ReturnCode { get; set; }
+
+        /// <summary>
+        /// Success/Error msg. OK, success, SUCCESS indicate a successful response
+        /// </summary>
+        [JsonProperty("retMsg")]
+        public string ReturnMessage { get; set; }
+
+
+        /// <summary>
+        /// Extend info. Most of the time, it is <c>{}</c>
+        /// </summary>
+        [JsonProperty("retExtInfo")]
+        public object ExtendedInfo { get; set; }
+
+        /// <summary>
+        /// Business data result
+        /// </summary>
         public T Result { get; set; }
 
+        /// <summary>
+        /// Current time
+        /// </summary>
         [JsonConverter(typeof(BybitTimeConverter))]
         public DateTime Time { get; set; }
     }

@@ -117,6 +117,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         public static void DownloadHistory(List<string> tickers, string resolution, string securityType,
             DateTime fromDate, DateTime toDate, string market = Market.Bybit)
         {
+            //todo open interest, funding rate?
             if (resolution.IsNullOrEmpty() || tickers.IsNullOrEmpty())
             {
                 Console.WriteLine("ByBitHistoryDownloader ERROR: '--tickers=' or '--resolution=' parameter is missing");
@@ -149,7 +150,6 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate,
                         toDate, tickType: TickType.Trade));
 
-                    //var bars = data.Cast<TradeBar>().ToList();
 
 
                     // Save the data (single resolution)

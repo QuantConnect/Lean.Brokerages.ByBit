@@ -23,7 +23,7 @@ public class BybitTrade
     /// <summary>
     /// Order Link Id
     /// </summary>
-    public string? OrderLinkId { get; set; }
+    public string OrderLinkId { get; set; }
 
     /// <summary>
     /// Side

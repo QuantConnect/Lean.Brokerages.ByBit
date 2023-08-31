@@ -58,7 +58,7 @@ public class BybitBalance
     public decimal? TotalPerpUnrealizedPnl { get; set; }
 
     /// <summary>
-    /// Iniital margin in USD
+    /// Initial margin in USD
     /// </summary>
     public decimal? TotalInitialMargin { get; set; }
 

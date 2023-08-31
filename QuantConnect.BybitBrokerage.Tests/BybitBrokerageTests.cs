@@ -30,9 +30,7 @@ using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
-using QuantConnect.Tests.Common.Securities;
 using QuantConnect.Util;
-using OrderStatus = QuantConnect.Orders.OrderStatus;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
-using System.Web;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -11,9 +10,7 @@ using QuantConnect.BybitBrokerage.Converters;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Logging;
-using QuantConnect.Orders;
 using QuantConnect.Securities;
-using QuantConnect.Util;
 using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;

@@ -17,7 +17,6 @@ using System;
 using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.Configuration;
 using QuantConnect.Util;
 using QuantConnect.Interfaces;

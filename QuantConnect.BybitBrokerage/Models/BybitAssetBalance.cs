@@ -74,7 +74,7 @@ public class BybitAssetBalance
     public decimal? TotalOrderInitialMargin { get; set; }
 
     /// <summary>
-    /// Total position maintenance marging
+    /// Total position maintenance margin
     /// </summary>
     [JsonProperty("totalPositionIM")]
     public decimal? TotalPositionInitialMargin { get; set; }

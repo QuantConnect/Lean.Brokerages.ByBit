@@ -9,3 +9,4 @@ public enum BybitAccountCategory
     [EnumMember(Value = "inverse")] Inverse,
     [EnumMember(Value = "option")] Option
 }
+
