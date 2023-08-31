@@ -238,8 +238,9 @@ public partial class BybitBrokerage
         var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
         foreach (var trade in trades.Data)
         {
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
-                trade.Price, trade.Value);
+            //Todo validate, we were talking about this in the meeting, negative value should be possible here as each trade always has a direction
+            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1; 
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time, trade.Price, tradeValue);
         }
     }
 
@@ -258,7 +259,7 @@ public partial class BybitBrokerage
             if (!dataMessage.Success)
             {
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
-                    $"Unable to authenticate to private stream: {dataMessage.ReturnMessage}"));
+                    $"Unable to authenticate private stream: {dataMessage.ReturnMessage}"));
             }
             else
             {
