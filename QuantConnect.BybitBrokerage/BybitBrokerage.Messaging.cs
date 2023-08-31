@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -33,9 +34,13 @@ public partial class BybitBrokerage
     };
 
     private static JsonSerializer JsonSerializer => JsonSerializer.CreateDefault(Settings);
-    
+
     private readonly object _tickLocker = new();
-    
+
+    private delegate void StreamAuthenticatedArgs(bool isSuccess, string message);
+
+    private event StreamAuthenticatedArgs Authenticated;
+
     private void OnUserMessage(WebSocketMessage webSocketMessage)
     {
         var e = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
@@ -49,7 +54,7 @@ public partial class BybitBrokerage
             var jObj = JObject.Parse(e.Message);
             if (jObj.TryGetValue("op", out _))
             {
-                HandleOpMessage(jObj);
+                HandleOperationMessage(jObj);
                 return;
             }
 
@@ -114,7 +119,8 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionQuantity,
                 fee);
 
-            Log.Trace($"Orderstatus changed {leanOrder.Status.ToStringInvariant()} => {status.ToStringInvariant()} from {tradeUpdate.ExecutionType?.ToStringInvariant()}");
+            Log.Trace(
+                $"Orderstatus changed {leanOrder.Status.ToStringInvariant()} => {status.ToStringInvariant()} from {tradeUpdate.ExecutionType?.ToStringInvariant()}");
             TestFix(leanOrder.Id, status);
             OnOrderEvent(orderEvent);
         }
@@ -190,7 +196,7 @@ public partial class BybitBrokerage
             var obj = JObject.Parse(data.Message);
             if (obj.TryGetValue("op", out _))
             {
-                HandleOpMessage(obj);
+                HandleOperationMessage(obj);
             }
             else if (obj.TryGetValue("topic", out var topic))
             {
@@ -237,17 +243,27 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleOpMessage(JToken message)
+    private void HandleOperationMessage(JToken message)
     {
         var dataMessage = message.ToObject<BybitOperationResponseMessage>();
-        if (dataMessage.Operation == "subscribe" && dataMessage.Success)
+        if (dataMessage.Operation == "subscribe" && !dataMessage.Success)
         {
-            //todo does the subscription needs to be confirmed?
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                $"Subscription failed: {dataMessage.ReturnMessage}"));
         }
 
         if (dataMessage.Operation == "auth")
         {
-            Log.Trace($"WS auth: success={dataMessage.Success}");
+            Authenticated?.Invoke(dataMessage.Success, dataMessage.ReturnMessage);
+            if (!dataMessage.Success)
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                    $"Unable to authenticate to private stream: {dataMessage.ReturnMessage}"));
+            }
+            else
+            {
+                Log.Trace("BybitBrokerage.HandleOpMessage() Successfully authenticated private stream");
+            }
         }
     }
 
@@ -286,14 +302,6 @@ public partial class BybitBrokerage
         {
             _aggregator.Update(tick);
         }
-    }
-
-    private void Send(IWebSocket webSocket, object obj)
-    {
-        var json = JsonConvert.SerializeObject(obj);
-
-        Log.Trace("Send: " + json);
-        webSocket.Send(json);
     }
 
 
@@ -349,45 +357,91 @@ public partial class BybitBrokerage
 
 
         WebSocket.Initialize(_privateWebSocketUrl);
-        if (api == null)
-        {
-            WebSocket.Open += OnOpenInstance;
-        }
-        else
-        {
-            WebSocket.Open += OnOpen;
-        }
+
+        // When connect is called from the api client factory the ApiClient instance property is not set yet
+        // to get rid of the deferred reference the OnOpen handler is replaced with the instance handler
+        api ??= ApiClient;
 
         //todo maybe there is a better place to validate this
-        var accountInfo = (api ?? ApiClient).Account.GetAccountInfo();
-        if (accountInfo.UnifiedMarginStatus is not (AccountUnifiedMarginStatus.UnifiedTrade or AccountUnifiedMarginStatus.UTAPro))
+        if (!IsAccountMarginStatusValid(api, out var message))
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
-                "Only unified margin trade accounts are supported"));
+            OnMessage(message);
             return;
         }
 
-        
-
-        void OnOpenInstance(object sender, EventArgs e)
-        {
-            OnPrivateWSConnected(ApiClient);
-        }
-
-        void OnOpen(object sender, EventArgs e)
-        {
-            WebSocket.Open -= OnOpen;
-            OnPrivateWSConnected(api);
-            WebSocket.Open += OnOpenInstance;
-        }
-
         ConnectSync();
+
+        // The initial authentication is done in sync to interrupt the brokerage initialization as this is a hard error
+        if (!AuthenticatePrivateWSAndWait(api))
+        {
+            throw new Exception("Unable to connect to client");
+        }
+
+        WebSocket.Open += OnPrivateWSConnected;
     }
 
-    private void OnPrivateWSConnected(BybitApi api)
+    private void OnPrivateWSConnected(object sender, EventArgs eventArgs)
     {
-        
-        Send(WebSocket, api.AuthenticateWebSocket());
-        Send(WebSocket, new { op = "subscribe", args = new[] { "order", "execution" } });
+        AuthenticatePrivateWS(ApiClient, TimeSpan.FromSeconds(30));
+    }
+
+    private void OnPrivateWSAuthenticated(bool isAuthenticated, string message)
+    {
+        if (isAuthenticated)
+        {
+            Send(WebSocket, new { op = "subscribe", args = new[] { "order", "execution" } });
+        }
+    }
+
+    private bool AuthenticatePrivateWSAndWait(BybitApi api)
+    {
+        var resetEvent = new ManualResetEvent(false);
+        var authenticated = false;
+
+        void OnAuthenticated(bool success, string _)
+        {
+            resetEvent.Set();
+            authenticated = success;
+        }
+
+        Authenticated += OnAuthenticated;
+        var authValidFor = TimeSpan.FromSeconds(30);
+
+        AuthenticatePrivateWS(api, authValidFor);
+        resetEvent.WaitOne(authValidFor);
+
+        Authenticated -= OnAuthenticated;
+        return authenticated;
+    }
+
+    private void AuthenticatePrivateWS(BybitApi api, TimeSpan authValidFor)
+    {
+        Send(WebSocket, api.AuthenticateWebSocket(authValidFor));
+    }
+
+    private static bool IsAccountMarginStatusValid(BybitApi api, out BrokerageMessageEvent message)
+    {
+        var accountInfo = api.Account.GetAccountInfo();
+        if (accountInfo.UnifiedMarginStatus is not (AccountUnifiedMarginStatus.UnifiedTrade
+            or AccountUnifiedMarginStatus.UTAPro))
+        {
+            message = new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                "Only unified margin trade accounts are supported");
+            return false;
+        }
+
+        message = null;
+        return true;
+    }
+
+    private static void Send(IWebSocket webSocket, object obj)
+    {
+        var json = JsonConvert.SerializeObject(obj, Settings);
+        if (Log.DebuggingEnabled)
+        {
+            Log.Debug("BybitBrokerage.Send(): " + json);
+        }
+
+        webSocket.Send(json);
     }
 }

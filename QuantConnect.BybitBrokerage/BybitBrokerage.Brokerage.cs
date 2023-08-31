@@ -73,8 +73,7 @@ public partial class BybitBrokerage
                 UnrealizedPnL = x.UnrealisedPnl,
                 MarketPrice = x.MarkPrice
             }).ToList();
-        
-        return holdings.Count > 0 ? holdings : base.GetAccountHoldings(_job?.BrokerageData, _algorithm.Securities.Values);
+        return holdings.Count > 0 ? holdings : base.GetAccountHoldings(_job?.BrokerageData, _algorithm?.Securities?.Values);
     }
 
     /// <summary>

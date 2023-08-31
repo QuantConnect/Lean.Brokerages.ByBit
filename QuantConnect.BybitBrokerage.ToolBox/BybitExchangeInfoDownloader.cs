@@ -36,7 +36,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
         /// <summary>
         /// Get exchange info coma-separated data
-        /// </summary>===
+        /// </summary>
         /// <returns>Enumerable of exchange info for this market</returns>
         public IEnumerable<string> Get()
         {

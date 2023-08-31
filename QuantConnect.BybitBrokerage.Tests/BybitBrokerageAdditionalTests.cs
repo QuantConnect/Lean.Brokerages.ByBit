@@ -47,6 +47,26 @@ namespace QuantConnect.BybitBrokerage.Tests
         }
 
         [Test]
+        public void ConnectionFailsIfAuthenticationFails()
+        {
+            var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.Utc));
+            var algorithmSettings = new AlgorithmSettings();
+            var transactions = new SecurityTransactionManager(null, securities);
+            transactions.SetOrderProcessor(new FakeOrderProcessor());
+
+            var algorithm = new Mock<IAlgorithm>();
+            algorithm.Setup(a => a.Transactions).Returns(transactions);
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
+            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
+
+            using var brokerage = CreateBrokerage(algorithm.Object, true);
+            
+            //this should throw while connecting to the private WS NOT in the GetCashBalance function
+            var testDelegate = new TestDelegate(() => brokerage.GetCashBalance());
+            Assert.Throws<Exception>(testDelegate);
+        }
+
+        [Test]
         public void ConnectedIfAlgorithmIsNotNullAndClientNotCreated()
         {
             using var brokerage = CreateBrokerage(Mock.Of<IAlgorithm>());
@@ -79,10 +99,10 @@ namespace QuantConnect.BybitBrokerage.Tests
             Assert.False(brokerage.IsConnected);
         }
         
-        private Brokerage CreateBrokerage(IAlgorithm algorithm)
+        private Brokerage CreateBrokerage(IAlgorithm algorithm, bool noSecrets = false)
         {
-            var apiKey = Config.Get("bybit-api-key");
-            var apiSecret = Config.Get("bybit-api-secret");
+            var apiKey = noSecrets ? string.Empty : Config.Get("bybit-api-key");
+            var apiSecret = noSecrets ? string.Empty : Config.Get("bybit-api-secret");
             var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 

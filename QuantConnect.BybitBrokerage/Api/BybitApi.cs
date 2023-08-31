@@ -102,10 +102,11 @@ public class BybitApi : IDisposable
     /// <summary>
     /// Returns a websocket message which can be used to authenticate the private socket connection
     /// </summary>
+    /// <param name="authenticationMessageValidFor">For how long the authentication token should be valid defaults to 10s</param>
     /// <returns></returns>
-    public object AuthenticateWebSocket()
+    public object AuthenticateWebSocket(TimeSpan? authenticationMessageValidFor = null)
     {
-        var expires = DateTimeOffset.UtcNow.AddSeconds(10).ToUnixTimeMilliseconds();
+        var expires = DateTimeOffset.UtcNow.Add(authenticationMessageValidFor ?? TimeSpan.FromSeconds(10)).ToUnixTimeMilliseconds();
         var signString = $"GET/realtime{expires}";
         var signed = _apiClient.Sign(signString);
         return new
