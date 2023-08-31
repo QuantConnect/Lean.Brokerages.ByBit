@@ -42,7 +42,7 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
 
     protected override decimal GetAskPrice(Symbol symbol)
     {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
-        return _client.Market.GetTicker(BybitAccountCategory.Linear, brokerageSymbol).Ask1Price!.Value;
+        return _client.Market.GetTicker(BybitProductCategory.Linear, brokerageSymbol).Ask1Price!.Value;
 
     }
 

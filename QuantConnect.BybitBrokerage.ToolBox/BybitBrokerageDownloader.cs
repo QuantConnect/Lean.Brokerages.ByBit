@@ -24,7 +24,6 @@ using QuantConnect.Configuration;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
-using QuantConnect.Statistics;
 using QuantConnect.Util;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox

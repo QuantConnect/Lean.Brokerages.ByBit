@@ -14,16 +14,34 @@ using TimeInForce = QuantConnect.BybitBrokerage.Models.Enums.TimeInForce;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
+/// <summary>
+/// Bybit trade api endpoint implementation
+/// <seealso href="https://bybit-exchange.github.io/docs/v5/order/create-order"/>
+/// </summary>
 public class BybitTradeApi : BybitBaseApi
 {
     private readonly BybitMarketApi _marketApiClient;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BybitTradeApi"/> class
+    /// </summary>
+    /// <param name="marketApi">The market API used to get current ticker information</param>
+    /// <param name="symbolMapper">The symbol mapper</param>
+    /// <param name="apiPrefix">The api prefix</param>
+    /// <param name="securityProvider">The security provider</param>
+    /// <param name="apiClient">The Bybit api client</param>
     public BybitTradeApi(BybitMarketApi marketApi, ISymbolMapper symbolMapper, string apiPrefix, ISecurityProvider securityProvider, BybitApiClient apiClient) : base(symbolMapper, apiPrefix, securityProvider, apiClient)
     {
         _marketApiClient = marketApi;
     }
 
-    public BybitPlaceOrderResponse CancelOrder(BybitAccountCategory category, Order order)
+    /// <summary>
+    /// Cancels the order
+    /// </summary>
+    /// <param name="category">The product category</param>
+    /// <param name="order">The order to cancel</param>
+    /// <returns>The order update response</returns>
+    public BybitUpdateOrderResponse CancelOrder(BybitProductCategory category, Order order)
     {
         var endpoint = $"{ApiPrefix}/order/cancel";
         var request = new RestRequest(endpoint, Method.POST);
@@ -42,11 +60,17 @@ public class BybitTradeApi : BybitBaseApi
         AuthenticateRequest(request);
 
         var response = ExecuteRequest(request);
-        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        var result = EnsureSuccessAndParse<BybitUpdateOrderResponse>(response);
         return result;
     }
 
-    public BybitPlaceOrderResponse PlaceOrder(BybitAccountCategory category, Order order)
+    /// <summary>
+    /// Places a new order
+    /// </summary>
+    /// <param name="category">The product category</param>
+    /// <param name="order">The order to place</param>
+    /// <returns>The order update response</returns>
+    public BybitUpdateOrderResponse PlaceOrder(BybitProductCategory category, Order order)
     {
         var endpoint = $"{ApiPrefix}/order/create";
         var request = new RestRequest(endpoint, Method.POST);
@@ -60,17 +84,28 @@ public class BybitTradeApi : BybitBaseApi
         AuthenticateRequest(request);
 
         var response = ExecuteRequest(request);
-        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        var result = EnsureSuccessAndParse<BybitUpdateOrderResponse>(response);
         return result;
     }
 
-    public IEnumerable<BybitOrder> GetOpenOrders(BybitAccountCategory category)
+    /// <summary>
+    /// Query unfilled or partially filled orders in real-time. To query older order records, please use the order history interface.
+    /// </summary>
+    /// <param name="category">The product category</param>
+    /// <returns>A enumerable of orders</returns>
+    public IEnumerable<BybitOrder> GetOpenOrders(BybitProductCategory category)
     {
         return FetchAll(category, FetchOpenOrders,
             x => x.List.Length < 50); //todo why is there a next page in the first place.... double check API
     }
 
-    public BybitPlaceOrderResponse UpdateOrder(BybitAccountCategory category, Order order)
+    /// <summary>
+    /// Updates the order
+    /// </summary>
+    /// <param name="category">The product category</param>
+    /// <param name="order">The order to update</param>
+    /// <returns>The order update response</returns>
+    public BybitUpdateOrderResponse UpdateOrder(BybitProductCategory category, Order order)
     {
         var endpoint = $"{ApiPrefix}/order/amend";
 
@@ -85,27 +120,27 @@ public class BybitTradeApi : BybitBaseApi
         AuthenticateRequest(request);
 
         var response = ExecuteRequest(request);
-        var result = EnsureSuccessAndParse<BybitPlaceOrderResponse>(response);
+        var result = EnsureSuccessAndParse<BybitUpdateOrderResponse>(response);
         return result;
     }
 
-    private ByBitPlaceOrderRequest CreateRequest(BybitAccountCategory category, Order order)
+    private ByBitPlaceOrderRequest CreateRequest(BybitProductCategory category, Order order)
     {
         return CreateRequest<ByBitPlaceOrderRequest>(category, order);
     }
     
-    private BybitPageResult<BybitOrder> FetchOpenOrders(BybitAccountCategory category, string cursor = null)
+    private BybitPageResult<BybitOrder> FetchOpenOrders(BybitProductCategory category, string cursor = null)
     {
         var endpoint = $"{ApiPrefix}/order/realtime";
         var request = new RestRequest(endpoint);
 
         request.AddQueryParameter("category", category.ToStringInvariant().ToLowerInvariant());
         request.AddQueryParameter("limit", "50");
-        if (category == BybitAccountCategory.Linear)
+        if (category == BybitProductCategory.Linear)
         {
             request.AddQueryParameter("settleCoin", "USDT"); //todo
         }
-        else if (category == BybitAccountCategory.Spot)
+        else if (category == BybitProductCategory.Spot)
         {
             //noop
         }
@@ -123,7 +158,7 @@ public class BybitTradeApi : BybitBaseApi
     }
 
     
-   private T CreateRequest<T>(BybitAccountCategory category, Order order) where T : ByBitPlaceOrderRequest, new()
+   private T CreateRequest<T>(BybitProductCategory category, Order order) where T : ByBitPlaceOrderRequest, new()
     {
         if (order.Direction == OrderDirection.Hold) throw new NotSupportedException();
         var properties = order.Properties as BybitOrderProperties;
@@ -151,7 +186,7 @@ public class BybitTradeApi : BybitBaseApi
                 break;
             case MarketOrder:
                 req.OrderType = OrderType.Market;
-                if (category == BybitAccountCategory.Spot && order.Direction == OrderDirection.Buy)
+                if (category == BybitProductCategory.Spot && order.Direction == OrderDirection.Buy)
                 {
                     var price = GetTickerPrice(category, order);
                     req.Quantity *= price; //todo: spot market buys require price in quote currency is this a good place to do this?
@@ -173,7 +208,7 @@ public class BybitTradeApi : BybitBaseApi
                 req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
                 req.ReduceOnly = true;
                 
-                if (category == BybitAccountCategory.Spot)
+                if (category == BybitProductCategory.Spot)
                 {
                     if (order.Direction == OrderDirection.Buy)
                     {
@@ -197,7 +232,7 @@ public class BybitTradeApi : BybitBaseApi
     }
 
         
-    private decimal GetTickerPrice(BybitAccountCategory category, Order order)
+    private decimal GetTickerPrice(BybitProductCategory category, Order order)
     {
         var security = SecurityProvider.GetSecurity(order.Symbol);
         var tickerPrice = order.Direction == OrderDirection.Buy ? security.AskPrice : security.BidPrice;
@@ -211,7 +246,7 @@ public class BybitTradeApi : BybitBaseApi
                     $"BinanceBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
             }
 
-            tickerPrice = order.Direction == OrderDirection.Buy ? ticker.Ask1Price.Value : ticker.Bid1Price.Value;
+            tickerPrice = order.Direction == OrderDirection.Buy ? ticker.Ask1Price!.Value : ticker.Bid1Price!.Value;
         }
 
         return tickerPrice;
@@ -222,9 +257,9 @@ public class BybitTradeApi : BybitBaseApi
         return orderType is (Orders.OrderType.Limit or Orders.OrderType.StopLimit or Orders.OrderType.LimitIfTouched);
     }
     
-    private static OrderFilter? GetOrderFilter(BybitAccountCategory category, Order order)
+    private static OrderFilter? GetOrderFilter(BybitProductCategory category, Order order)
     {
-        if (category != BybitAccountCategory.Spot) return null;
+        if (category != BybitProductCategory.Spot) return null;
         switch (order.Type)
         {
             case Orders.OrderType.StopLimit:
@@ -235,8 +270,5 @@ public class BybitTradeApi : BybitBaseApi
                 return default;
         }
 
-        return (order.Type is not (Orders.OrderType.Limit or Orders.OrderType.Market))
-            ? OrderFilter.TpSlOrder
-            : null;
     }
 }

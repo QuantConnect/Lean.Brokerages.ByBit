@@ -2,7 +2,10 @@
 
 namespace QuantConnect.BybitBrokerage.Models.Enums;
 
-public enum MarginTrading
+/// <summary>
+/// Margin trading support for securities
+/// </summary>
+public enum MarginTradingSupport
 {
     /// <summary>
     /// Regardless of normal account or UTA account, this trading pair does not support margin trading

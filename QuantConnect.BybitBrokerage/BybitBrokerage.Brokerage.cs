@@ -39,7 +39,7 @@ public partial class BybitBrokerage
                 order = item.OrderType == OrderType.Limit
                     ? new StopLimitOrder(symbol, item.Quantity, price, item.Price!.Value, item.CreateTime)
                     : new StopMarketOrder(symbol, item.Quantity, price, item.CreateTime);
-                if (Category == BybitAccountCategory.Spot)
+                if (Category == BybitProductCategory.Spot)
                 {
                 }
             }
@@ -73,7 +73,8 @@ public partial class BybitBrokerage
                 UnrealizedPnL = x.UnrealisedPnl,
                 MarketPrice = x.MarkPrice
             }).ToList();
-        return holdings;
+        
+        return holdings.Count > 0 ? holdings : base.GetAccountHoldings(_job?.BrokerageData, _algorithm.Securities.Values);
     }
 
     /// <summary>
@@ -124,7 +125,7 @@ public partial class BybitBrokerage
     /// <returns>True if the request was made for the order to be updated, false otherwise</returns>
     public override bool UpdateOrder(Order order)
     {
-        if (Category == BybitAccountCategory.Spot)
+        if (Category == BybitProductCategory.Spot)
         {
             throw new NotSupportedException("BybitBrokerage.UpdateOrder: Order update not supported for spot. Please cancel and re-create.");
         }
@@ -140,7 +141,7 @@ public partial class BybitBrokerage
 
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.Trade.UpdateOrder(Category, order);
+            ApiClient.Trade.UpdateOrder(Category, order);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
                 Status = OrderStatus.UpdateSubmitted
@@ -182,7 +183,7 @@ public partial class BybitBrokerage
                 return;
             }
             
-            var result = ApiClient.Trade.CancelOrder(Category, order); ;
+            ApiClient.Trade.CancelOrder(Category, order);
             
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero) { Status = OrderStatus.CancelPending });
             canceled = true;
@@ -190,6 +191,11 @@ public partial class BybitBrokerage
         return canceled;
     }
 
+    /// <summary>
+    /// Wss message handler
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected override void OnMessage(object sender, WebSocketMessage e)
     {
         _messageHandler.HandleNewMessage(e);

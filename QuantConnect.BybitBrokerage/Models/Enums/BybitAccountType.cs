@@ -2,6 +2,9 @@ using System.Runtime.Serialization;
 
 namespace QuantConnect.BybitBrokerage.Models.Enums;
 
+/// <summary>
+/// Bybit account type
+/// </summary>
 public enum BybitAccountType
 {
     /// <summary>

@@ -4,13 +4,44 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.BybitBrokerage.Converters;
 
+/// <summary>
+/// Json converter to represent decimals as strings
+/// </summary>
 public class BybitDecimalStringConverter : JsonConverter<decimal>
 {
+    /// <summary>
+    /// Gets a value indicating whether this <see cref="JsonConverter"/> can read JSON.
+    /// </summary>
+    /// <value><c>true</c> if this <see cref="JsonConverter"/> can read JSON; otherwise, <c>false</c>.</value>
+    public override bool CanRead => true;
+
+    /// <summary>
+    /// Gets a value indicating whether this <see cref="JsonConverter"/> can write JSON.
+    /// </summary>
+    /// <value><c>true</c> if this <see cref="JsonConverter"/> can write JSON; otherwise, <c>false</c>.</value>
+    public override bool CanWrite => true;
+
+    /// <summary>
+    /// Writes the JSON representation of the object.
+    /// </summary>
+    /// <param name="writer">The <see cref="JsonWriter"/> to write to.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="serializer">The calling serializer.</param>
     public override void WriteJson(JsonWriter writer, decimal value, JsonSerializer serializer)
     {
         writer.WriteValue(value.ToStringInvariant());
     }
 
+    /// <summary>
+    /// Reads the JSON representation of the object.
+    /// </summary>
+    /// <param name="reader">The <see cref="JsonReader"/> to read from.</param>
+    /// <param name="objectType">Type of the object.</param>
+    /// <param name="existingValue">The existing value of object being read.</param>
+    /// <param name="hasExistingValue">The existing value has a value.</param>
+    /// <param name="serializer">The calling serializer.</param>
+
+    /// <returns>The object value.</returns>
     public override decimal ReadJson(JsonReader reader, Type objectType, decimal existingValue, bool hasExistingValue,
         JsonSerializer serializer)
     {
@@ -20,15 +51,11 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
             return dec;
         }
 
-        if (val is string str &&
-            decimal.TryParse(str, NumberStyles.Currency, CultureInfo.InvariantCulture, out var res))
+        if (val is string str && decimal.TryParse(str, NumberStyles.Currency, CultureInfo.InvariantCulture, out var res))
         {
             return res;
         }
 
-        return ReadJson(reader, objectType, existingValue, hasExistingValue, serializer);
+        throw new Exception();
     }
-
-    public override bool CanRead => true;
-    public override bool CanWrite => true;
 }

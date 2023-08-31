@@ -2,7 +2,10 @@
 
 namespace QuantConnect.BybitBrokerage.Models.Enums;
 
-public enum UnifiedMarginStatus
+/// <summary>
+/// Bybit account unified margin status
+/// </summary>
+public enum AccountUnifiedMarginStatus
 {
     /// <summary>
     /// Regular account

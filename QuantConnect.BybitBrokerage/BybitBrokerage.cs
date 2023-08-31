@@ -15,9 +15,10 @@ using OrderStatus = QuantConnect.Orders.OrderStatus;
 
 namespace QuantConnect.BybitBrokerage;
 
-//todo margin
-//todo open interest?
-//todo funding rate?
+/// <summary>
+/// Bybit brokerage implementation
+/// todo: margin, oi funding
+/// </summary>
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 {
@@ -29,10 +30,25 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
+    /// <summary>
+    /// Brokerage market name
+    /// </summary>
     protected string MarketName { get; set; }
-    protected BybitApi ApiClient => _apiClientLazy?.Value;
+    
+    /// <summary>
+    /// Order provider 
+    /// </summary>
     protected IOrderProvider OrderProvider { get; private set; }
-    protected virtual BybitAccountCategory Category => BybitAccountCategory.Spot;
+    
+    /// <summary>
+    /// Api client instance
+    /// </summary>
+    protected BybitApi ApiClient => _apiClientLazy?.Value;
+    
+    /// <summary>
+    /// Account category
+    /// </summary>
+    protected virtual BybitProductCategory Category => BybitProductCategory.Spot;
 
     /// <summary>
     /// Returns true if we're currently connected to the broker
@@ -52,25 +68,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     public BybitBrokerage(string marketName) : base(marketName)
     {
     }
-
-
-    /// <summary>
-    /// Constructor for brokerage
-    /// </summary>
-    /// <param name="apiKey">api key</param>
-    /// <param name="apiSecret">api secret</param>
-    /// <param name="restApiUrl">The rest api url</param>
-    /// <param name="webSocketBaseUrl">The web socket base url</param>
-    /// <param name="aggregator">the aggregator for consolidating ticks</param>
-    /// <param name="job">The live job packet</param>
-    /// <param name="marketName">Actual market name</param>
-    public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator,
-        LiveNodePacket job, string marketName = Market.Bybit)
-        : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, null, orderProvider, securityProvider, aggregator, job,
-            marketName)
-    {
-    }
+    
 
     /// <summary>
     /// Constructor for brokerage
@@ -82,28 +80,31 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
     /// <param name="aggregator">the aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
+    /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-        IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
+        IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, algorithm?.Portfolio?.Transactions,
-            algorithm?.Portfolio, aggregator, job, Market.Bybit)
+            algorithm?.Portfolio, aggregator, job, Market.Bybit,vipLevel)
     {
     }
 
     /// <summary>
     /// Constructor for brokerage
     /// </summary>
-    /// <param name="apiKey">api key</param>
-    /// <param name="apiSecret">api secret</param>
-    /// <param name="restApiUrl">The rest api url</param>
     /// <param name="webSocketBaseUrl">The web socket base url</param>
-    /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
-    /// <param name="aggregator">the aggregator for consolidating ticks</param>
+    /// <param name="restApiUrl">The rest api url</param>
+    /// <param name="apiKey">The api key</param>
+    /// <param name="apiSecret">The api secret</param>
+    /// <param name="algorithm">The algorithm instance is required to retrieve account type</param>
+    /// <param name="orderProvider">The order provider is required to retrieve orders</param>
+    /// <param name="securityProvider">The security provider is required</param>
+    /// <param name="aggregator">The aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
-    /// <param name="orderProvider"></param>
-    /// <param name="marketName">Actual market name</param>
+    /// <param name="marketName">Market name</param>
+    /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-        IDataAggregator aggregator, LiveNodePacket job, string marketName)
+        IDataAggregator aggregator, LiveNodePacket job, string marketName, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : base(marketName)
     {
         Initialize(
@@ -116,11 +117,16 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             securityProvider,
             aggregator,
             job,
-            marketName
+            marketName,
+            vipLevel
         );
     }
 
-
+    /// <summary>
+    /// Gets the history for the requested security
+    /// </summary>
+    /// <param name="request">The historical data request</param>
+    /// <returns>An enumerable of bars or ticks covering the span specified in the request</returns>
     public override IEnumerable<BaseData> GetHistory(HistoryRequest request)
     {
         if (!_symbolMapper.IsKnownLeanSymbol(request.Symbol))
@@ -155,12 +161,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         if (request.Resolution == Resolution.Tick)
         {
-            var res = new BybitArchiveDownloader().Download(Category, brokerageSymbol, request.StartTimeUtc,
+            var res = new BybitHistoryApi().Download(Category, brokerageSymbol, request.StartTimeUtc,
                 request.EndTimeUtc);
             foreach (var tick in res)
             {
                 yield return new Tick(tick.Time, request.Symbol, string.Empty, MarketName,
-                    tick.Size * (tick.Side == OrderSide.Buy ? 1m : -1m), tick.price);
+                    tick.Value * (tick.Side == OrderSide.Buy ? 1m : -1m), tick.Price);
             }
 
             yield break;
@@ -168,7 +174,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         var client = ApiClient ??
                      GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null,
-                         null);
+                         null,BybitVIPLevel.VIP0);
 
         var kLines = client.Market
             .GetKLines(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
@@ -182,10 +188,24 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
     }
 
+    /// <summary>
+    /// Initialize the instance of this class
+    /// </summary>
+    /// <param name="baseWssUrl">The web socket base url</param>
+    /// <param name="restApiUrl">The rest api url</param>
+    /// <param name="apiKey">The api key</param>
+    /// <param name="apiSecret">The api secret</param>
+    /// <param name="algorithm">The algorithm instance is required to retrieve account type</param>
+    /// <param name="orderProvider">The order provider is required to retrieve orders</param>
+    /// <param name="securityProvider">The security provider is required</param>
+    /// <param name="aggregator">The aggregator for consolidating ticks</param>
+    /// <param name="job">The live job packet</param>
+    /// <param name="marketName">Market name</param>
+    /// <param name="vipLevel">Bybit VIP level</param>
     protected void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
         IDataAggregator aggregator, LiveNodePacket job,
-        string marketName)
+        string marketName, BybitVIPLevel vipLevel)
     {
         if (IsInitialized)
         {
@@ -205,9 +225,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         OrderProvider = orderProvider;
         MarketName = marketName;
 
+        //todo symbol weight
         var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(publicWssUrl,
-            100,
-            100,
+            16,
+            128,
             new Dictionary<Symbol, int>(),
             () => new BybitWebSocketWrapper(),
             Subscribe,
@@ -221,7 +242,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         {
             _apiClientLazy = new Lazy<BybitApi>(() =>
             {
-                var client = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret);
+                var client = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel);
                 Connect(client);
                 return client;
             });
@@ -229,6 +250,11 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         //todo ValidateSubscription(); 
     }
 
+    /// <summary>
+    /// Checks if this brokerage supports the specified symbol
+    /// </summary>
+    /// <param name="symbol">The symbol</param>
+    /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
     protected virtual bool CanSubscribe(Symbol symbol)
     {
         return !symbol.Value.Contains("UNIVERSE") &&
@@ -236,6 +262,9 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                symbol.ID.Market == MarketName;
     }
 
+    /// <summary>
+    /// Gets the supported security type by the brokerage
+    /// </summary>
     protected virtual SecurityType GetSupportedSecurityType()
     {
         return SecurityType.Crypto;
@@ -243,7 +272,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
 
     /// <summary>
-    /// Adds the specified symbols to the subscription
+    /// Not used
     /// </summary>
     /// <param name="symbols">The symbols to be added keyed by SecurityType</param>
     protected override bool Subscribe(IEnumerable<Symbol> symbols)
@@ -252,13 +281,18 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         return true;
     }
 
+    /// <summary>
+    /// Gets the appropriate API client to use
+    /// </summary>
     protected virtual BybitApi GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-        string restApiUrl, string apiKey, string apiSecret)
+        string restApiUrl, string apiKey, string apiSecret, BybitVIPLevel vipLevel)
     {
-        var url = Config.Get("bybit-api-url", "https://api.bybit.com");
-        return new BybitApi(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
+        return new BybitApi(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, vipLevel);
     }
 
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
     public override void Dispose()
     {
         SubscriptionManager.DisposeSafely();

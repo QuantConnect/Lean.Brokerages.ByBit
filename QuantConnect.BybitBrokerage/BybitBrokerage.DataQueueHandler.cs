@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Packets;
@@ -44,7 +45,7 @@ public partial class BybitBrokerage
     /// <summary>
     /// Sets the job we're subscribing for
     /// </summary>
-    /// <param name="job">Job we're subscribing for</param>
+    /// <param name="job">The job we're subscribing for</param>
     public void SetJob(LiveNodePacket job)
     {
         var aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
@@ -59,8 +60,16 @@ public partial class BybitBrokerage
         }
     }
 
+    /// <summary>
+    /// Initializes the brokerage for the job we're subscribing for
+    /// </summary>
+    /// <param name="job">The job we're subscribing for</param>
+    /// <param name="aggregator">The aggregator for consolidating ticks</param>
     protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
     {
+        var vipLevelString = job.BrokerageData["bybit-vip-level"];
+        var vipLevel = Enum.Parse<BybitVIPLevel>(vipLevelString, true);
+
         Initialize(
             baseWssUrl: job.BrokerageData["bybit-websocket-url"],
             restApiUrl: job.BrokerageData["bybit-api-url"],
@@ -71,7 +80,8 @@ public partial class BybitBrokerage
             securityProvider: null,
             aggregator,
             job,
-            Market.Bybit
+            Market.Bybit,
+            vipLevel
         );
     }
 }

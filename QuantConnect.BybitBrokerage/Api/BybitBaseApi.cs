@@ -15,8 +15,14 @@ using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
+/// <summary>
+/// Base Bybit api endpoint implementation
+/// </summary>
 public abstract class BybitBaseApi
 {
+    /// <summary>
+    /// Default api JSON serializer settings
+    /// </summary>
     protected static readonly JsonSerializerSettings SerializerSettings = new()
     {
         ContractResolver = new DefaultContractResolver
@@ -27,24 +33,35 @@ public abstract class BybitBaseApi
         NullValueHandling = NullValueHandling.Ignore
     };
 
-    
+    private readonly BybitApiClient _apiClient;
+
+    /// <summary>
+    /// Api prefix
+    /// </summary>
     protected string ApiPrefix { get; }
+    
+    /// <summary>
+    /// Symbol mapper
+    /// </summary>
     protected ISymbolMapper SymbolMapper { get; }
+    
+    /// <summary>
+    /// Security provider
+    /// </summary>
     protected ISecurityProvider SecurityProvider { get; }
     
-    protected BybitApiClient ApiClient { get; }
+    /// <summary>
+    /// Bybit api client
+    /// </summary>
 
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BybitBaseApi"/> class.
     /// </summary>
-    /// <param name="symbolMapper">The symbol mapper.</param>
-    /// <param name="apiPrefix"></param>
-    /// <param name="securityProvider"></param>
-    /// <param name="apiClient"></param>
-    /// <param name="apiKey">The Binance API key</param>
-    /// <param name="restApiUrl">The Bina
-    /// nce API rest url</param>
+    /// <param name="symbolMapper">The symbol mapper</param>
+    /// <param name="apiPrefix">The api prefix</param>
+    /// <param name="securityProvider">The security provider</param>
+    /// <param name="apiClient">The api client</param>
     protected BybitBaseApi(
         ISymbolMapper symbolMapper,
         string apiPrefix,
@@ -54,12 +71,12 @@ public abstract class BybitBaseApi
         SymbolMapper = symbolMapper;
         SecurityProvider = securityProvider;
         ApiPrefix = apiPrefix;
-        ApiClient = apiClient;
+        _apiClient = apiClient;
     }
 
 
-
-    protected T[] FetchAll<T>(BybitAccountCategory category, Func<BybitAccountCategory, string, BybitPageResult<T>> fetch, Predicate<BybitPageResult<T>> @break  = null)
+//todo get rid of func
+    protected T[] FetchAll<T>(BybitProductCategory category, Func<BybitProductCategory, string, BybitPageResult<T>> fetch, Predicate<BybitPageResult<T>> @break  = null)
     {
         var results = new List<T>();
         string cursor = null;
@@ -74,6 +91,13 @@ public abstract class BybitBaseApi
         return results.ToArray();
     }
     
+    /// <summary>
+    /// Ensures the request executed successfully and returns the parsed business object
+    /// </summary>
+    /// <param name="response">The response to parse</param>
+    /// <typeparam name="T">The type of the response business object</typeparam>
+    /// <returns>The parsed response business object</returns>
+    /// <exception cref="Exception"></exception>
     [StackTraceHidden]
     protected T EnsureSuccessAndParse<T>(IRestResponse response)
     {
@@ -100,7 +124,7 @@ public abstract class BybitBaseApi
         {
             throw new Exception("ByBitApiClient request failed: " +
                                 $"[{(int)response.StatusCode}] {response.StatusDescription}, " +
-                                $"Content: {response.Content}, ErrorCode: {byBitResponse.ReturnCode} ErrorMessage: {byBitResponse.ReturnMessage}");
+                                $"Content: {response.Content}, ErrorCode: {byBitResponse?.ReturnCode} ErrorMessage: {byBitResponse?.ReturnMessage}");
         }
 
         if (Log.DebuggingEnabled)
@@ -112,19 +136,27 @@ public abstract class BybitBaseApi
         return byBitResponse.Result;
     }
     
-
+    /// <summary>
+    /// Authenticates the provided request by signing it and adding the required headers
+    /// </summary>
+    /// <param name="request">The request to authenticate</param>
+    /// <exception cref="NotSupportedException">Is thrown when an unsupported request type is provided. Only GET and POST are supported</exception>
     protected void AuthenticateRequest(IRestRequest request)
     {
-        ApiClient.AuthenticateRequest(request);
+        _apiClient.AuthenticateRequest(request);
     }
 
+    /// <summary>
+    /// Executes the rest request
+    /// </summary>
+    /// <param name="request">The rest request to execute</param>
+    /// <returns>The rest response</returns>
     protected IRestResponse ExecuteRequest(IRestRequest request)
     {
-        return ApiClient.ExecuteRequest(request);
+        return _apiClient.ExecuteRequest(request);
     }
 
-    protected virtual BybitAccountType BybitAccountType(BybitAccountCategory category) =>
-        Models.Enums.BybitAccountType.Unified;
+
     
 
     

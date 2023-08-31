@@ -10,5 +10,5 @@ public class BybitOrderUpdate : BybitOrder
     /// <summary>
     /// Product type
     /// </summary>
-    public BybitAccountCategory Category { get; set; }
+    public BybitProductCategory Category { get; set; }
 }

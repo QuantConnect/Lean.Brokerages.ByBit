@@ -8,37 +8,41 @@ using RestSharp;
 
 namespace QuantConnect.BybitBrokerage.Api;
 
+/// <summary>
+/// Bybit api client implementation
+/// </summary>
 public class BybitApiClient : IDisposable
 {
-    private readonly HMACSHA256 _hmacsha256;
+    private readonly HMACSHA256 _hmacSha256;
     private readonly string _apiKey;
     private readonly RestClient _restClient;
     private readonly RateGate _rateGate;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BybitApiClient"/> class 
+    /// </summary>
+    /// <param name="apiKey">The api key</param>
+    /// <param name="apiSecret">The api secret</param>
+    /// <param name="restApiUrl">The api url</param>
+    /// <param name="maxRequestsPerSecond">The api rate limit per second</param>
     public BybitApiClient(
         string apiKey,
         string apiSecret,
-        string restApiUrl)
+        string restApiUrl,
+        int maxRequestsPerSecond)
     {
         _restClient = new RestClient(restApiUrl);
         _apiKey = apiKey;
-        _hmacsha256 = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret ?? string.Empty));
-        //Todo this limit is variable and based on the vip status, how to do that in the best way? The range is 10/s -> 300/s
-        _rateGate = new RateGate(10, Time.OneSecond);
-
+        _hmacSha256 = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret ?? string.Empty));
+        _rateGate = new RateGate(maxRequestsPerSecond, Time.OneSecond);
     }
 
-   
 
-
-
-
-    public void Dispose()
-    {
-        _hmacsha256.DisposeSafely();
-        _rateGate.DisposeSafely();
-    }
-    
+    /// <summary>
+    /// Authenticates the provided request by signing it and adding the required headers
+    /// </summary>
+    /// <param name="request">The request to authenticate</param>
+    /// <exception cref="NotSupportedException">Is thrown when an unsupported request type is provided. Only GET and POST are supported</exception>
     public void AuthenticateRequest(IRestRequest request)
     {
         string sign;
@@ -70,17 +74,27 @@ public class BybitApiClient : IDisposable
         request.AddHeader("X-BAPI-SIGN-TYPE", "2");
     }
 
+    /// <summary>
+    /// Executes the rest request
+    /// </summary>
+    /// <param name="request">The rest request to execute</param>
+    /// <returns>The rest response</returns>
     public IRestResponse ExecuteRequest(IRestRequest request)
     {
         _rateGate.WaitToProceed();
         return _restClient.Execute(request);
     }
 
-    public string Sign(string queryString)
+    /// <summary>
+    /// Returns the signed version of the provided string
+    /// </summary>
+    /// <param name="stringToSign">The string to sign</param>
+    /// <returns>The signed string</returns>
+    public string Sign(string stringToSign)
     {
-        var messageBytes = Encoding.UTF8.GetBytes(queryString);
+        var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
 
-        var computedHash = _hmacsha256.ComputeHash(messageBytes);
+        var computedHash = _hmacSha256.ComputeHash(messageBytes);
         var hex = new StringBuilder(computedHash.Length * 2);
         foreach (var b in computedHash)
         {
@@ -88,6 +102,15 @@ public class BybitApiClient : IDisposable
         }
 
         return hex.ToString();
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        _hmacSha256.DisposeSafely();
+        _rateGate.DisposeSafely();
     }
 
     private static string GetNonce()

@@ -13,7 +13,7 @@ public class BybitAccountInfo
     /// <summary>
     /// Account status
     /// </summary>
-    public UnifiedMarginStatus UnifiedMarginStatus { get; set; }
+    public AccountUnifiedMarginStatus UnifiedMarginStatus { get; set; }
     
     /// <summary>
     /// Account margin mode

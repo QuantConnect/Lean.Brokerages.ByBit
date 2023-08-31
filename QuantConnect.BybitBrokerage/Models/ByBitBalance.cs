@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using QuantConnect.BybitBrokerage.Models.Enums;
 
 namespace QuantConnect.BybitBrokerage.Models;
 
@@ -12,7 +13,7 @@ public class BybitBalance
     /// <summary>
     /// Account type
     /// </summary>
-    public Enums.AccountType AccountType { get; set; }
+    public BybitAccountType AccountType { get; set; }
 
     /// <summary>
     /// Account LTV

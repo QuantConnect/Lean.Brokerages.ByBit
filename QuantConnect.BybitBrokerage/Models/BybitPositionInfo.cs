@@ -11,7 +11,7 @@ public class BybitPositionInfo
     /// <summary>
     /// Product type
     /// </summary>
-    public BybitAccountCategory Category { get; set; }
+    public BybitProductCategory Category { get; set; }
     
     /// <summary>
     /// Position idx, used to identify positions in different position modes

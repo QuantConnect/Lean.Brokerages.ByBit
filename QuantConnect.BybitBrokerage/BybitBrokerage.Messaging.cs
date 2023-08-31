@@ -33,11 +33,9 @@ public partial class BybitBrokerage
     };
 
     private static JsonSerializer JsonSerializer => JsonSerializer.CreateDefault(Settings);
-    protected readonly object TickLocker = new();
-
-    /// <summary>
-    /// Locking object for the Ticks list in the data queue handler
-    /// </summary>
+    
+    private readonly object _tickLocker = new();
+    
     private void OnUserMessage(WebSocketMessage webSocketMessage)
     {
         var e = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
@@ -63,8 +61,6 @@ public partial class BybitBrokerage
                     break;
                 case "execution":
                     HandleOrderExecution(jObj);
-                    break;
-                default:
                     break;
             }
         }
@@ -101,9 +97,9 @@ public partial class BybitBrokerage
             {
                 var currency = Category switch
                 {
-                    BybitAccountCategory.Linear => "USDT",
-                    BybitAccountCategory.Inverse => GetBaseCurrency(symbol),
-                    BybitAccountCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
+                    BybitProductCategory.Linear => "USDT",
+                    BybitProductCategory.Inverse => GetBaseCurrency(symbol),
+                    BybitProductCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
                     _ => throw new NotSupportedException($"category {Category.ToString()} not implemented")
                 };
                 fee = new OrderFee(new CashAmount(tradeUpdate.ExecutionFee, currency));
@@ -137,8 +133,8 @@ public partial class BybitBrokerage
 
         static string GetBaseCurrency(string pair)
         {
-            CurrencyPairUtil.DecomposeCurrencyPair(pair, out var @base, out _);
-            return pair;
+            CurrencyPairUtil.DecomposeCurrencyPair(pair, out var baseCurrency, out _);
+            return baseCurrency;
         }
     }
 
@@ -195,7 +191,6 @@ public partial class BybitBrokerage
             if (obj.TryGetValue("op", out _))
             {
                 HandleOpMessage(obj);
-                return;
             }
             else if (obj.TryGetValue("topic", out var topic))
             {
@@ -267,7 +262,7 @@ public partial class BybitBrokerage
             TickType = TickType.Trade
         };
 
-        lock (TickLocker)
+        lock (_tickLocker)
         {
             _aggregator.Update(tick);
         }
@@ -287,7 +282,7 @@ public partial class BybitBrokerage
         };
         tick.SetValue();
 
-        lock (TickLocker)
+        lock (_tickLocker)
         {
             _aggregator.Update(tick);
         }
@@ -365,7 +360,7 @@ public partial class BybitBrokerage
 
         //todo maybe there is a better place to validate this
         var accountInfo = (api ?? ApiClient).Account.GetAccountInfo();
-        if (accountInfo.UnifiedMarginStatus is not (UnifiedMarginStatus.UnifiedTrade or UnifiedMarginStatus.UTAPro))
+        if (accountInfo.UnifiedMarginStatus is not (AccountUnifiedMarginStatus.UnifiedTrade or AccountUnifiedMarginStatus.UTAPro))
         {
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
                 "Only unified margin trade accounts are supported"));

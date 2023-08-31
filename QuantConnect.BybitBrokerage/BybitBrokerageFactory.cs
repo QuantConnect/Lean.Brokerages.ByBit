@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using QuantConnect.Brokerages;
+using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
@@ -26,7 +27,7 @@ using QuantConnect.Util;
 namespace QuantConnect.BybitBrokerage
 {
     /// <summary>
-    /// Provides a template implementation of BrokerageFactory
+    /// Factory method to create Bybit brokerage
     /// </summary>
     public class BybitBrokerageFactory : BrokerageFactory
     {
@@ -41,9 +42,12 @@ namespace QuantConnect.BybitBrokerage
         {
             { "bybit-api-secret", Config.Get("bybit-api-secret") },
             { "bybit-api-key", Config.Get("bybit-api-key") },
-            { "bybit-api-url", Config.Get("bybit-api-url") },
-            { "bybit-websocket-url", Config.Get("bybit-websocket-url") },
-
+            // paper trading available using https://api-testnet.bybit.com
+            { "bybit-api-url", Config.Get("bybit-api-url", "https://api.bybit.com") },
+            // paper trading available using wss://stream-testnet.bybit.com
+            { "bybit-websocket-url", Config.Get("bybit-websocket-url","wss://stream.bybit.com") },
+            { "bybit-vip-level", Config.Get("bybit-vip-level","VIP0")},
+            
             // load holdings if available
             { "live-holdings", Config.Get("live-holdings") },
         };
@@ -55,6 +59,10 @@ namespace QuantConnect.BybitBrokerage
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BybitBrokerageFactory"/> class
+        /// </summary>
+        /// <param name="brokerageType">The brokerage type to be registered</param>
         protected BybitBrokerageFactory(Type brokerageType) : base(brokerageType)
         {
         }
@@ -78,6 +86,7 @@ namespace QuantConnect.BybitBrokerage
             var apiSecret = Read<string>(job.BrokerageData, "bybit-api-secret", errors);
             var apiUrl = Read<string>(job.BrokerageData, "bybit-api-url", errors);
             var wsUrl = Read<string>(job.BrokerageData, "bybit-websocket-url", errors);
+            var vipLevel = Read<BybitVIPLevel>(job.BrokerageData, "bybit-vip-level", errors);
 
             if (errors.Count != 0)
             {
@@ -89,15 +98,27 @@ namespace QuantConnect.BybitBrokerage
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
 
-            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl);
+            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl, vipLevel);
             Composer.Instance.AddPart(brokerage);
             return brokerage;
         }
 
+        /// <summary>
+        /// Creates a new IBrokerage instance
+        /// </summary>
+        /// <param name="job">The job packet to create the brokerage for</param>
+        /// <param name="algorithm">The algorithm instance</param>
+        /// <param name="aggregator">The aggregator for consolidating ticks</param>
+        /// <param name="apiKey">The api key</param>
+        /// <param name="apiSecret">The api secret</param>
+        /// <param name="apiUrl">The rest api url</param>
+        /// <param name="wsUrl">The websocket base url</param>
+        /// <param name="vipLevel">Bybit VIP level</param>
+        /// <returns>A new brokerage instance</returns>
         protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm,
-            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl)
+            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl, BybitVIPLevel vipLevel)
         {
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel);
         }
 
         /// <summary>
@@ -105,7 +126,7 @@ namespace QuantConnect.BybitBrokerage
         /// </summary>
         public override void Dispose()
         {
-            //throw new NotImplementedException();
+            //Not needed
         }
     }
 }

@@ -56,5 +56,5 @@ public class BybitTickUpdate
     /// <summary>
     /// BT
     /// </summary>
-    [JsonProperty("BT")] public bool BT { get; set; }
+    [JsonProperty("BT")] public bool Bt { get; set; }
 }

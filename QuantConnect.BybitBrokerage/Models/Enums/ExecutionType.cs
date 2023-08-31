@@ -1,7 +1,13 @@
 ﻿namespace QuantConnect.BybitBrokerage.Models.Enums;
 
+/// <summary>
+/// Trade execution type
+/// </summary>
 public enum ExecutionType
 {
+    /// <summary>
+    /// Trade
+    /// </summary>
     Trade,
     /// <summary>
     /// Auto-Deleveraging <seealso href="https://www.bybit.com/en-US/help-center/bybitHC_Article?language=en_US&id=000001124"/>
@@ -19,5 +25,8 @@ public enum ExecutionType
     /// USDC Futures delivery
     /// </summary>
     Delivery,
+    /// <summary>
+    /// Block trade
+    /// </summary>
     BlockTrade
 }

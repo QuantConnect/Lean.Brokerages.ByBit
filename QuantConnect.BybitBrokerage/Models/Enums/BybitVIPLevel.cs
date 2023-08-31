@@ -1,62 +1,56 @@
 ﻿namespace QuantConnect.BybitBrokerage.Models.Enums;
 
 /// <summary>
-/// Order Status
+/// Bybit VIP Levels
 /// </summary>
-public enum OrderStatus
+public enum BybitVIPLevel
 {
     /// <summary>
-    /// Created
+    /// VIP 0
     /// </summary>
-    Created,
-
+    VIP0,
     /// <summary>
-    /// New
+    /// VIP 1
     /// </summary>
-    New,
-
+    VIP1,
     /// <summary>
-    /// Rejected
+    /// VIP 2
     /// </summary>
-    Rejected,
-
+    VIP2,
     /// <summary>
-    /// Partially filled
+    /// VIP 3
     /// </summary>
-    PartiallyFilled,
-
+    VIP3,
     /// <summary>
-    /// Partially filled canceled
+    /// VIP 4
     /// </summary>
-    PartiallyFilledCanceled,
-
+    VIP4,
     /// <summary>
-    /// Filled
+    /// VIP 5
     /// </summary>
-    Filled,
-
+    VIP5,
     /// <summary>
-    /// Cancelled
+    /// Supreme VIP
     /// </summary>
-    Cancelled,
-
+    SupremeVIP,
     /// <summary>
-    /// Untriggered
+    /// Pro 1
     /// </summary>
-    Untriggered,
-
+    Pro1,
     /// <summary>
-    /// Triggered
+    /// Pro 2
     /// </summary>
-    Triggered,
-
+    Pro2,
     /// <summary>
-    /// Deactivated
+    /// Pro 3
     /// </summary>
-    Deactivated,
-
+    Pro3,
     /// <summary>
-    /// Active
+    /// Pro 4
     /// </summary>
-    Active
+    Pro4,
+    /// <summary>
+    /// Pro 5
+    /// </summary>
+    Pro5
 }

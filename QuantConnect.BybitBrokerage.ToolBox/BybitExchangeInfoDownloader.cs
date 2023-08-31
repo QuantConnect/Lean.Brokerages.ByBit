@@ -17,12 +17,10 @@ using System;
 using QuantConnect.ToolBox;
 using System.Collections.Generic;
 using System.Linq;
-using QLNet;
 using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
-using Instrument = System.Diagnostics.Metrics.Instrument;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox
 {
@@ -45,9 +43,9 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
             using var client = new BybitApi(null, null,null, null, apiUrl);
 
-            var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitAccountCategory.Linear));
+            var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitProductCategory.Linear));
             //var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
-            var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitAccountCategory.Spot));
+            var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitProductCategory.Spot));
 
             var symbols = new[] { linear, spot }
                     .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            

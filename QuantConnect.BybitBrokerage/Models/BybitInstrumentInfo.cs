@@ -94,5 +94,5 @@ public class BybitInstrumentInfo
     /// - This is to identify if the symbol support margin trading under different account modes
     /// - You may find some symbols not supporting margin buy or margin sell, so you need to go to Collateral Info (UTA) or Borrowable Coin (Normal) to check if that coin is borrowable
     /// </summary>
-    public MarginTrading MarginTrading { get; set; }
+    public MarginTradingSupport MarginTrading { get; set; }
 }

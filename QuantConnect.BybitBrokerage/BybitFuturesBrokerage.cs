@@ -23,49 +23,50 @@ using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage
 {
-    //todo inverse
+    /// <summary>
+    /// Bybit futures brokerage implementation
+    /// todo: inverse
+    /// </summary>
     [BrokerageFactory((typeof(BybitFuturesBrokerageFactory)))]
     public class BybitFuturesBrokerage : BybitBrokerage
     {
+        
+        /// <summary>
+        /// Account category
+        /// </summary>
+        protected override BybitProductCategory Category => BybitProductCategory.Linear;
+        
+        /// <summary>
+        /// Parameterless constructor for brokerage
+        /// </summary>
         public BybitFuturesBrokerage() : this(Market.Bybit)
         {
         }
 
+        /// <summary>
+        /// Constructor for brokerage
+        /// </summary>
         public BybitFuturesBrokerage(string marketName) : base(marketName)
         {
         }
-
+        
         /// <summary>
         /// Constructor for brokerage
         /// </summary>
-        /// <param name="apiKey">api key</param>
-        /// <param name="apiSecret">api secret</param>
-        /// <param name="restApiUrl">The rest api url</param>
         /// <param name="webSocketBaseUrl">The web socket base url</param>
-        /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
-        /// <param name="aggregator">the aggregator for consolidating ticks</param>
-        /// <param name="job">The live job packet</param>
-        public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-            IOrderProvider orderProvider, ISecurityProvider securityProvider, IDataAggregator aggregator,
-            LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, orderProvider, securityProvider, aggregator, job)
-        {
-        }
-
-        /// <summary>
-        /// Constructor for brokerage
-        /// </summary>
-        /// <param name="apiKey">api key</param>
-        /// <param name="apiSecret">api secret</param>
         /// <param name="restApiUrl">The rest api url</param>
-        /// <param name="webSocketBaseUrl">The web socket base url</param>
-        /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
-        /// <param name="aggregator">the aggregator for consolidating ticks</param>
+        /// <param name="apiKey">The api key</param>
+        /// <param name="apiSecret">The api secret</param>
+        /// <param name="algorithm">The algorithm instance is required to retrieve account type</param>
+        /// <param name="orderProvider">The order provider is required to retrieve orders</param>
+        /// <param name="securityProvider">The security provider is required</param>
+        /// <param name="aggregator">The aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
+        /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
             IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-            IDataAggregator aggregator, LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit)
+            IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit, vipLevel)
         {
         }
 
@@ -79,19 +80,28 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
+        /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, aggregator, job)
+            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl, algorithm, aggregator, job, vipLevel)
         {
         }
 
-        protected override BybitAccountCategory Category => BybitAccountCategory.Linear;
 
+
+        /// <summary>
+        /// Gets the supported security type by the brokerage
+        /// </summary>
         protected override SecurityType GetSupportedSecurityType()
         {
             return SecurityType.CryptoFuture;
         }
 
+        /// <summary>
+        /// Checks if this brokerage supports the specified symbol
+        /// </summary>
+        /// <param name="symbol">The symbol</param>
+        /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
         protected override bool CanSubscribe(Symbol symbol)
         {
             if (!base.CanSubscribe(symbol)) return false;

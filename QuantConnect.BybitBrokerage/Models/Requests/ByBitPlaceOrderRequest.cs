@@ -4,10 +4,24 @@ using QuantConnect.BybitBrokerage.Models.Enums;
 
 namespace QuantConnect.BybitBrokerage.Models.Requests;
 
+/// <summary>
+/// Bybit place order api request
+/// </summary>
 public class ByBitPlaceOrderRequest
 {
+    /// <summary>
+    /// Trigger direction
+    /// </summary>
     public int TriggerDirection { get; set; }
-    public BybitAccountCategory Category { get; set; }
+
+    /// <summary>
+    /// Product category
+    /// </summary>
+    public BybitProductCategory Category { get; set; }
+
+    /// <summary>
+    /// Symbol
+    /// </summary>
     public string Symbol { get; set; }
 
     /// <summary>
@@ -21,7 +35,7 @@ public class ByBitPlaceOrderRequest
     public OrderType OrderType { get; set; }
 
     /// <summary>
-    /// Valid for spot only. Order,tpslOrder, StopOrder. If not passed, Order by default
+    /// Valid for spot only. Order, tpslOrder, StopOrder. If not passed, Order by default
     /// </summary>
     public OrderFilter? OrderFilter { get; set; }
 
@@ -29,7 +43,6 @@ public class ByBitPlaceOrderRequest
     /// Order price
     /// </summary>
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-
     public decimal? Price { get; set; }
 
     /// <summary>
@@ -37,7 +50,6 @@ public class ByBitPlaceOrderRequest
     /// </summary>
     [JsonProperty("qty")]
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-
     public decimal Quantity { get; set; }
 
     /// <summary>
@@ -46,13 +58,21 @@ public class ByBitPlaceOrderRequest
     [JsonProperty("time_in_force")]
     public TimeInForce? TimeInForce { get; set; }
 
+    /// <summary>
+    /// Base price
+    /// </summary>
     [JsonConverter(typeof(BybitDecimalStringConverter))]
     public decimal? BasePrice { get; set; }
 
+    /// <summary>
+    /// Trigger price
+    /// </summary>
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-
     public decimal? TriggerPrice { get; set; }
 
+    /// <summary>
+    /// Trigger by type
+    /// </summary>
     public TriggerType? TriggerBy { get; set; }
 
 
@@ -61,7 +81,6 @@ public class ByBitPlaceOrderRequest
     /// </summary>
     [JsonProperty("orderlv")]
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-
     public decimal? OrderLv { get; set; }
 
     /// <summary>
@@ -69,13 +88,12 @@ public class ByBitPlaceOrderRequest
     /// 1. The same orderLinkId can be used for both USDC PERP and USDT PERP.
     /// 2. An orderLinkId can be reused once the original order is either Filled or Cancelled
     /// </summary>
-    public string? OrderLinkId { get; set; }
+    public string OrderLinkId { get; set; }
 
     /// <summary>
     /// Take-profit price, only valid when positions are opened.
     /// </summary>
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-
     public decimal? TakeProfit { get; set; }
 
     /// <summary>
@@ -96,17 +114,49 @@ public class ByBitPlaceOrderRequest
     /// </summary>
     public TriggerType? SlTriggerBy { get; set; }
 
+    /// <summary>
+    /// Reduce only order
+    /// </summary>
     public bool? ReduceOnly { get; set; }
+    
+    /// <summary>
+    /// Close on trigger
+    /// </summary>
     public bool? CloseOnTrigger { get; set; }
+    
+    /// <summary>
+    /// Market maker protection
+    /// </summary>
     public bool? Mmp { get; set; }
 
+    /// <summary>
+    /// Position index
+    /// </summary>
     [JsonProperty("positionIdx")] public int? PositionIndex { get; set; }
 
+    /// <summary>
+    /// Take-profit limit price
+    /// </summary>
     [JsonConverter(typeof(BybitDecimalStringConverter))]
     public decimal? TpLimitPrice { get; set; }
 
+    /// <summary>
+    /// Stop-loss limit price
+    /// </summary>
     public decimal? SlLimitPrice { get; set; }
+    
+    /// <summary>
+    /// Take-profit order type
+    /// </summary>
     public OrderType? TpOrderType { get; set; }
+    
+    /// <summary>
+    /// Stop-loss order type
+    /// </summary>
     public OrderType? SlOrderType { get; set; }
+    
+    /// <summary>
+    /// Take-profit / Stop-loss mode
+    /// </summary>
     [JsonProperty("'tpslMode")] public string TpSlMode { get; set; }
 }

@@ -1,5 +1,8 @@
 ﻿namespace QuantConnect.BybitBrokerage.Models.Enums;
 
+/// <summary>
+/// Time in force
+/// </summary>
 public enum TimeInForce
 {
     /// <summary>

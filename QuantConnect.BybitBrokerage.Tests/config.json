@@ -1,7 +1,5 @@
 {
   "data-folder": "../../../../Lean/Data/",
   "bybit-api-url": "https://api-testnet.bybit.com", 
-  "bybit-websocket-url": "wss://stream-testnet.bybit.com",
-  "bybit-api-key": "pEracuIff75yDVvUmZ",
-  "bybit-api-secret": "VlgIdDTw1piiPG9ipd6IdIUYjKvsUkGsQaEC"
+  "bybit-websocket-url": "wss://stream-testnet.bybit.com"
 }

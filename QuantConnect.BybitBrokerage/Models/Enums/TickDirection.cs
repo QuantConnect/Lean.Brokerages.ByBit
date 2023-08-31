@@ -1,5 +1,8 @@
 ﻿namespace QuantConnect.BybitBrokerage.Models.Enums;
 
+/// <summary>
+/// Tick direction
+/// </summary>
 public enum TickDirection
 {
     /// <summary>

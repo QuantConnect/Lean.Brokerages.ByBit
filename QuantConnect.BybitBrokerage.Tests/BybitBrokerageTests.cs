@@ -81,7 +81,7 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected override decimal GetAskPrice(Symbol symbol)
         {
             var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
-            return _client.Market.GetTicker(BybitAccountCategory.Spot, brokerageSymbol).Ask1Price!.Value;
+            return _client.Market.GetTicker(BybitProductCategory.Spot, brokerageSymbol).Ask1Price!.Value;
         }
 
 

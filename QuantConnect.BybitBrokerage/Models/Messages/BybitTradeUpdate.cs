@@ -11,5 +11,5 @@ public class BybitTradeUpdate : BybitTrade
     /// <summary>
     /// Product type
     /// </summary>
-    public BybitAccountCategory Category { get; set; }
+    public BybitProductCategory Category { get; set; }
 }
