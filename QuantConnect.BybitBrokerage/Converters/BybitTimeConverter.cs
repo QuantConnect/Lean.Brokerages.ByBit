@@ -59,6 +59,6 @@ public class BybitTimeConverter : JsonConverter<DateTime>
 
 
         var dto = DateTimeOffset.FromUnixTimeMilliseconds(ts);
-        return dto.DateTime;
+        return dto.UtcDateTime;
     }
 }

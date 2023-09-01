@@ -47,6 +47,11 @@ public class BybitApiClient : IDisposable
     /// <exception cref="NotSupportedException">Is thrown when an unsupported request type is provided. Only GET and POST are supported</exception>
     public void AuthenticateRequest(IRestRequest request)
     {
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            throw new Exception("Client needs to be created with api credentials to execute private endpoints");
+        }
+
         string sign;
         if (request.Method == Method.GET)
         {

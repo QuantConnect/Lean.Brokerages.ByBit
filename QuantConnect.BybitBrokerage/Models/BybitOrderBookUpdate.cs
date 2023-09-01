@@ -29,11 +29,11 @@ public class BybitOrderBookUpdate
     /// Update ID. Is a sequence. Occasionally, you'll receive "u"=1, which is a snapshot data due to the restart of the service. So please overwrite your local orderbook
     /// </summary>
     [JsonProperty("u")]
-    public int UpdateId { get; set; }
+    public long UpdateId { get; set; }
 
     /// <summary>
     /// Cross sequence. You can use this field to compare different levels orderbook data, and for the smaller seq, then it means the data is generated earlier
     /// </summary>
     [JsonProperty("seq")]
-    public int CrossSequence { get; set; }
+    public long CrossSequence { get; set; }
 }
