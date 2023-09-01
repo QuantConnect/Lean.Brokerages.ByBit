@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Bybit VIP Levels
+/// todo would it make sense to move this to Lean and reuse it in the fee model?
 /// </summary>
 public enum BybitVIPLevel
 {
