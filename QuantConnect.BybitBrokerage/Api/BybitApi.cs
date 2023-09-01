@@ -1,5 +1,3 @@
-
-
 using System;
 using System.Collections.Generic;
 using QuantConnect.Brokerages;
@@ -15,44 +13,44 @@ public class BybitApi : IDisposable
 {
     private static readonly Dictionary<BybitVIPLevel, int> RateLimits = new()
     {
-        { BybitVIPLevel.VIP0 , 10},
-        { BybitVIPLevel.VIP1 , 20},
-        { BybitVIPLevel.VIP2 , 40},
-        { BybitVIPLevel.VIP3 , 60},
-        { BybitVIPLevel.VIP4 , 60},
-        { BybitVIPLevel.VIP5 , 60},
-        { BybitVIPLevel.SupremeVIP , 60},
-        { BybitVIPLevel.Pro1 , 100},
-        { BybitVIPLevel.Pro2 , 150},
-        { BybitVIPLevel.Pro3 , 200},
-        { BybitVIPLevel.Pro4 , 200},
-        { BybitVIPLevel.Pro5 , 200}
+        { BybitVIPLevel.VIP0, 10 },
+        { BybitVIPLevel.VIP1, 20 },
+        { BybitVIPLevel.VIP2, 40 },
+        { BybitVIPLevel.VIP3, 60 },
+        { BybitVIPLevel.VIP4, 60 },
+        { BybitVIPLevel.VIP5, 60 },
+        { BybitVIPLevel.SupremeVIP, 60 },
+        { BybitVIPLevel.Pro1, 100 },
+        { BybitVIPLevel.Pro2, 150 },
+        { BybitVIPLevel.Pro3, 200 },
+        { BybitVIPLevel.Pro4, 200 },
+        { BybitVIPLevel.Pro5, 200 }
     };
 
     private readonly BybitApiClient _apiClient;
     private readonly string _apiKey;
-    
+
     /// <summary>
     /// Market Api
     /// </summary>
-    public BybitMarketApi Market { get; }
-    
+    public BybitMarketApiEndpoint Market { get; }
+
     /// <summary>
     /// Account Api
     /// </summary>
-    public BybitAccountApi Account { get; }
-    
+    public BybitAccountApiEndpoint Account { get; }
+
     /// <summary>
     /// Position Api
     /// </summary>
-    public BybitPositionApi Position { get; }
-    
+    public BybitPositionApiEndpoint Position { get; }
+
     /// <summary>
     /// Trade Api
     /// </summary>
-    public BybitTradeApi Trade { get; }
+    public BybitTradeApiEndpoint Trade { get; }
 
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BybitApi"/> class
     /// </summary>
@@ -69,16 +67,16 @@ public class BybitApi : IDisposable
         string restApiUrl,
         int maxRequestsPerSecond)
     {
-        
         _apiKey = apiKey;
-        _apiClient = new BybitApiClient(apiKey, apiSecret, restApiUrl,maxRequestsPerSecond);
-        
+        _apiClient = new BybitApiClient(apiKey, apiSecret, restApiUrl, maxRequestsPerSecond);
+
         const string apiPrefix = "/v5";
-        Market = new BybitMarketApi(symbolMapper, apiPrefix, securityProvider, _apiClient);
-        Account = new BybitAccountApi(symbolMapper, apiPrefix, securityProvider,_apiClient );
-        Position = new BybitPositionApi(symbolMapper, apiPrefix, securityProvider, _apiClient);
-        Trade = new BybitTradeApi(Market, symbolMapper, apiPrefix, securityProvider,_apiClient);
+        Market = new BybitMarketApiEndpoint(symbolMapper, apiPrefix, securityProvider, _apiClient);
+        Account = new BybitAccountApiEndpoint(symbolMapper, apiPrefix, securityProvider, _apiClient);
+        Position = new BybitPositionApiEndpoint(symbolMapper, apiPrefix, securityProvider, _apiClient);
+        Trade = new BybitTradeApiEndpoint(Market, symbolMapper, apiPrefix, securityProvider, _apiClient);
     }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BybitApi"/> class
     /// </summary>
@@ -94,11 +92,11 @@ public class BybitApi : IDisposable
         string apiKey,
         string apiSecret,
         string restApiUrl,
-        BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) :this(symbolMapper,securityProvider,apiKey, apiSecret, restApiUrl, RateLimits.GetValueOrDefault(vipLevel,10))
+        BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : this(symbolMapper, securityProvider, apiKey, apiSecret,
+        restApiUrl, RateLimits.GetValueOrDefault(vipLevel, 10))
     {
-
     }
-    
+
     /// <summary>
     /// Returns a websocket message which can be used to authenticate the private socket connection
     /// </summary>
@@ -106,7 +104,8 @@ public class BybitApi : IDisposable
     /// <returns></returns>
     public object AuthenticateWebSocket(TimeSpan? authenticationMessageValidFor = null)
     {
-        var expires = DateTimeOffset.UtcNow.Add(authenticationMessageValidFor ?? TimeSpan.FromSeconds(10)).ToUnixTimeMilliseconds();
+        var expires = DateTimeOffset.UtcNow.Add(authenticationMessageValidFor ?? TimeSpan.FromSeconds(10))
+            .ToUnixTimeMilliseconds();
         var signString = $"GET/realtime{expires}";
         var signed = _apiClient.Sign(signString);
         return new
@@ -120,7 +119,7 @@ public class BybitApi : IDisposable
             }
         };
     }
-    
+
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>

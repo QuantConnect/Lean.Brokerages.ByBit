@@ -18,6 +18,16 @@ public class BybitHistoryApi
 {
     private const string BaseAddress = "https://public.bybit.com";
 
+    private readonly IRestClient _restClient;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BybitHistoryApi"/> class
+    /// </summary>
+    public BybitHistoryApi()
+    {
+        _restClient = new RestClient(BaseAddress);
+    }
+
     /// <summary>
     /// Downloads historical tick data from Bybit
     /// </summary>
@@ -26,7 +36,8 @@ public class BybitHistoryApi
     /// <param name="from">The start time</param>
     /// <param name="to">The end time</param>
     /// <returns>An IEnumerable containing the ticks in the requested range</returns>
-    public IEnumerable<BybitTickUpdate> Download(BybitProductCategory category, string symbol, DateTime from, DateTime to)
+    public IEnumerable<BybitTickUpdate> Download(BybitProductCategory category, string symbol, DateTime from,
+        DateTime to)
     {
         for (var i = from.Date; i <= to.Date; i = i.AddDays(1))
         {
@@ -47,7 +58,7 @@ public class BybitHistoryApi
     /// <param name="symbol">The symbol to fetch the history for</param>
     /// <param name="date">The requested date</param>
     /// <returns>An IEnumerable containing the ticks from the requested date</returns>
-    public IEnumerable<BybitTickUpdate> Download(string symbol, BybitProductCategory category, DateTime date)
+    private IEnumerable<BybitTickUpdate> Download(string symbol, BybitProductCategory category, DateTime date)
     {
         if (category is not (BybitProductCategory.Inverse or BybitProductCategory.Linear or BybitProductCategory.Spot))
         {
@@ -58,44 +69,54 @@ public class BybitHistoryApi
         var dateSeparator = category == BybitProductCategory.Spot ? "_" : string.Empty;
         var endpoint = $"/{categoryPath}/{symbol}/{symbol}{dateSeparator}{date:yyyy-MM-dd}.csv.gz";
 
-        var client = new RestClient(BaseAddress);
-        var req = new RestRequest(endpoint);
 
-        using (var memoryStream = new MemoryStream()){
-
-        req.ResponseWriter = stream => stream.CopyTo(memoryStream);
-        var resp = client.Execute(req);
-        if (!resp.IsSuccessful) yield break; //todo error handling/logigng
-
+        using var memoryStream = new MemoryStream();
+        DownloadArchiveToStream(endpoint, memoryStream);
         memoryStream.Position = 0;
-        using (var gzip = new GZipStream(memoryStream, CompressionMode.Decompress))
-        using (var streamReader = new StreamReader(gzip))
+
+        using var gzip = new GZipStream(memoryStream, CompressionMode.Decompress);
+        using var streamReader = new StreamReader(gzip);
+
+        streamReader.ReadLine(); //header
+        var line = streamReader.ReadLine();
+        while (!string.IsNullOrEmpty(line))
         {
-            streamReader.ReadLine(); //header
-            var line = streamReader.ReadLine();
-            while (!string.IsNullOrEmpty(line))
+            if (category == BybitProductCategory.Spot)
             {
-                
-                if (category == BybitProductCategory.Spot)
-                {
-                    yield return ParseSpotTick(line, symbol);
-                }
-                else if(category is BybitProductCategory.Inverse or BybitProductCategory.Linear)
-                {
-                    var tick = ParseFuturesTick(line);
-                    if (tick != null) yield return tick;
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-                line = streamReader.ReadLine();
+                yield return ParseSpotTick(line, symbol);
             }
-        }
+            else if (category is BybitProductCategory.Inverse or BybitProductCategory.Linear)
+            {
+                var tick = ParseFuturesTick(line);
+                if (tick != null) yield return tick;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            line = streamReader.ReadLine();
         }
     }
 
-    private BybitTickUpdate ParseSpotTick(string line, string symbol)
+    private void DownloadArchiveToStream(string endpoint, Stream stream)
+    {
+        var req = new RestRequest(endpoint)
+        {
+            ResponseWriter = responseStream => responseStream.CopyTo(stream)
+        };
+
+        var response = _restClient.Execute(req);
+
+        if (!response.IsSuccessful)
+        {
+            throw new Exception("ByBitApiClient request failed: " +
+                                $"[{(int)response.StatusCode}] {response.StatusDescription}, " +
+                                $"Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
+        }
+    }
+
+    private static BybitTickUpdate ParseSpotTick(string line, string symbol)
     {
         var tick = new BybitTickUpdate();
         var split = line.Split(',');
@@ -106,12 +127,12 @@ public class BybitHistoryApi
         tick.Symbol = symbol;
         return tick;
     }
-    private BybitTickUpdate? ParseFuturesTick(string line)
+
+    private static BybitTickUpdate ParseFuturesTick(string line)
     {
         var tick = new BybitTickUpdate();
         try
         {
-
             var split = line.Split(',');
             tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0]));
             tick.Symbol = split[1];
@@ -126,7 +147,7 @@ public class BybitHistoryApi
         }
         catch (Exception e)
         {
-            Log.Error(e,$"Error while parsing tick line: '{line}'");
+            Log.Error(e, $"Error while parsing tick line: '{line}'");
             return null;
         }
 

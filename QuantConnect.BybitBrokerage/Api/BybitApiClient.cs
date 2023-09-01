@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 using QuantConnect.Util;
 using RestSharp;
 
@@ -79,6 +81,7 @@ public class BybitApiClient : IDisposable
     /// </summary>
     /// <param name="request">The rest request to execute</param>
     /// <returns>The rest response</returns>
+    [StackTraceHidden]
     public IRestResponse ExecuteRequest(IRestRequest request)
     {
         _rateGate.WaitToProceed();
