@@ -151,13 +151,14 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             return Array.Empty<BaseData>();
         }
 
-        if (request.TickType != TickType.Trade)
+        if (request.TickType is not (TickType.OpenInterest or TickType.Trade))
         {
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
                 $"{request.TickType} tick type not supported, no history returned"));
             return Array.Empty<BaseData>();
         }
 
+       
         if (request.Symbol.SecurityType != GetSupportedSecurityType())
         {
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSecurityType",
@@ -167,6 +168,11 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
 
+        if (request.TickType == TickType.OpenInterest)
+        {
+            return GetOpenInterestHistory(brokerageSymbol, request);
+        }
+        
         if (request.Resolution == Resolution.Tick)
         {
             return GetTickHistory(brokerageSymbol, request);
@@ -326,6 +332,19 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             yield return new TradeBar(Time.UnixMillisecondTimeStampToDateTime(byBitKLine.OpenTime), request.Symbol,
                 byBitKLine.Open, byBitKLine.High, byBitKLine.Low, byBitKLine.Close, byBitKLine.Volume,
                 periodTimeSpan);
+        }
+    }
+
+    private IEnumerable<OpenInterest> GetOpenInterestHistory(string brokerageSymbol, HistoryRequest request)
+    {
+        var client = ApiClient ?? GetApiClient(_symbolMapper, null,
+            Config.Get("bybit-api-url", "https://api.bybit.com"), null, null, BybitVIPLevel.VIP0);
+        var oiHistory = client.Market
+            .GetOpenInterest(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
+        
+        foreach (var oi in oiHistory)
+        {
+            yield return new OpenInterest(oi.Time, request.Symbol, oi.OpenInterest);
         }
     }
 

@@ -31,6 +31,7 @@ namespace QuantConnect.BybitBrokerage.Tests
     [TestFixture]
     public class BybitBrokerageHistoryProviderTests
     {
+        private static readonly Symbol ETHUSDT = Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit);
         private Brokerage _brokerage;
 
         [OneTimeSetUp]
@@ -53,14 +54,10 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     // valid
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit), Resolution.Tick,
-                        Time.OneMinute, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Minute, Time.OneHour, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit), Resolution.Hour,
-                        Time.OneDay, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Tick, Time.OneMinute, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                 };
             }
         }

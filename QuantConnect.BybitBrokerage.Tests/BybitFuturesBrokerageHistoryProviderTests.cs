@@ -31,6 +31,7 @@ namespace QuantConnect.BybitBrokerage.Tests
     [TestFixture]
     public class BybitFuturesBrokerageHistoryProviderTests
     {
+        private static readonly Symbol ETHUSDT = Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit);
         private Brokerage _brokerage;
 
         [OneTimeSetUp]
@@ -53,14 +54,13 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     // valid
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick,
-                        Time.OneMinute, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
-                        Resolution.Minute, Time.OneHour, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Hour,
-                        Time.OneDay, TickType.Trade, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
-                        Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Tick, Time.OneMinute, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
+                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.OpenInterest, false)
+                    
+
                 };
             }
         }
@@ -71,12 +71,9 @@ namespace QuantConnect.BybitBrokerage.Tests
             {
                 return new[]
                 {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit), Resolution.Tick,
-                        TimeSpan.FromSeconds(15), TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
-                        Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit),
-                        Resolution.Minute, Time.OneHour, TickType.Quote),
+                    new TestCaseData(ETHUSDT, Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Second, Time.OneMinute, TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Quote),
                 };
             }
         }
