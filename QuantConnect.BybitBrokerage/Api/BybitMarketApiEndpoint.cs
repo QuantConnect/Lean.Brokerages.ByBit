@@ -82,7 +82,6 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
                 // Start time of the next request is the next candle
                 fromMs = lastCandleOpen + msToNextBar;
             }
-            
         }
     }
 
@@ -128,9 +127,21 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
     /// <returns>The current ticker information</returns>
     public BybitTicker GetTicker(BybitProductCategory category, string symbol)
     {
-        var result = ExecuteGetRequest<BybitPageResult<BybitTicker>>("/market/tickers", category,
-            new[] { new KeyValuePair<string, string>("symbol", symbol) });
-        return result.List[0];
+        return GetTickers(category, symbol)[0];
+    }
+
+    /// <summary>
+    /// Query for the latest price snapshot, best bid/ask price, and trading volume in the last 24 hours.
+    /// </summary>
+    /// <param name="category">The product category</param>
+    /// <param name="symbol">The symbol to query for</param>
+    /// <returns>The current ticker information</returns>
+    public BybitTicker[] GetTickers(BybitProductCategory category, string symbol = null)
+    {
+        var parameters =
+            symbol == null ? null : new KeyValuePair<string, string>[] { new("symbol", symbol) };
+
+        return ExecuteGetRequest<BybitPageResult<BybitTicker>>("/market/tickers", category, parameters).List;
     }
 
     /// <summary>
@@ -200,12 +211,12 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
             {
                 // No data available, maybe there is something available later
                 fromMs = currentTo;
-            }else
+            }
+            else
             {
                 // Start time of the next request is the next available datapoint
                 fromMs = (long)Time.DateTimeToUnixTimeStampMilliseconds(lastOiTime) + msToNextBar;
             }
-          
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using QuantConnect.Brokerages;
 using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models.Enums;
@@ -220,11 +221,35 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         OrderProvider = orderProvider;
         MarketName = marketName;
 
-        //todo symbol weight
+        //todo validate
+        var weights = new Dictionary<Symbol, int>();
+        using (var tempClient = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel))
+        {
+            foreach (var ticker in tempClient.Market.GetTickers(Category))
+            {
+                Symbol leanSymbol;
+                try
+                {
+                    leanSymbol = _symbolMapper.GetLeanSymbol(ticker.Symbol, GetSupportedSecurityType(), MarketName);
+                }
+                catch (Exception)
+                {
+                    //The api returns some currently unsupported symbols we can ignore these right now
+                    continue;
+                }
+
+                var weight = (ticker.Turnover24Hours > int.MaxValue)
+                    ? int.MaxValue
+                    : decimal.ToInt32(ticker.Turnover24Hours ?? 0);
+                
+                weights.Add(leanSymbol,weight);
+            }
+        }
+        
         var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(publicWssUrl,
             16,
             128,
-            new Dictionary<Symbol, int>(),
+            weights,
             () => new BybitWebSocketWrapper(),
             Subscribe,
             Unsubscribe,

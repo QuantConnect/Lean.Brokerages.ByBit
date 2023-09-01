@@ -470,7 +470,7 @@ public partial class BybitBrokerage
         ConnectSync();
 
         // The initial authentication is done in sync to interrupt the brokerage initialization as this is a hard error
-        if (!AuthenticatePrivateWSAndWait(api))
+        if (!AuthenticatePrivateWSSync(api))
         {
             throw new Exception("Unable to connect to client");
         }
@@ -491,9 +491,9 @@ public partial class BybitBrokerage
         }
     }
 
-    private bool AuthenticatePrivateWSAndWait(BybitApi api)
+    private bool AuthenticatePrivateWSSync(BybitApi api)
     {
-        var resetEvent = new ManualResetEvent(false);
+        using var resetEvent = new ManualResetEvent(false);
         var authenticated = false;
 
         void OnAuthenticated(object _, StreamAuthenticatedEventArgs args)
@@ -507,7 +507,6 @@ public partial class BybitBrokerage
 
         AuthenticatePrivateWS(api, authValidFor);
         resetEvent.WaitOne(authValidFor);
-
         Authenticated -= OnAuthenticated;
         return authenticated;
     }
