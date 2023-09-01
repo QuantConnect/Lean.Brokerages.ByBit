@@ -90,7 +90,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
                     // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily,
-                        TimeSpan.FromDays(15),TickType.Trade),
+                        TimeSpan.FromDays(15), TickType.Trade),
 
                     //invalid security type
                     new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade),
@@ -101,22 +101,24 @@ namespace QuantConnect.BybitBrokerage.Tests
 
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
-        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,bool throwsException)
+        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,
+            bool throwsException)
         {
             BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, throwsException, false);
         }
-        
+
         [Test]
         [TestCaseSource(nameof(NoHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
         public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
-            BaseHistoryTest(_brokerage,symbol, resolution, period, tickType,false, true);
+            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, false, true);
         }
 
-        protected static void BaseHistoryTest(Brokerage brokerage, Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,bool throwsException, bool emptyData)
+        protected static void BaseHistoryTest(Brokerage brokerage, Symbol symbol, Resolution resolution,
+            TimeSpan period, TickType tickType, bool throwsException, bool emptyData)
         {
-               TestDelegate test = () =>
+            TestDelegate test = () =>
             {
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
@@ -150,7 +152,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                     {
                         foreach (var tick in slice.Ticks[symbol])
                         {
-                            Log.Trace("{0}: {1} - {2} / {3}", tick.Time.ToStringInvariant("yyyy-MM-dd HH:mm:ss.fff"), tick.Symbol, tick.BidPrice, tick.AskPrice);
+                            Log.Trace("{0}: {1} - {2} / {3}", tick.Time.ToStringInvariant("yyyy-MM-dd HH:mm:ss.fff"),
+                                tick.Symbol, tick.BidPrice, tick.AskPrice);
                         }
                     }
                     else if (slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
@@ -159,8 +162,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                     }
                     else if (slice.Bars.TryGetValue(symbol, out var bar))
                     {
-                        Log.Trace("{0}: {1} - O={2}, H={3}, L={4}, C={5}", bar.Time, bar.Symbol, bar.Open, bar.High, bar.Low, bar.Close);
-
+                        Log.Trace("{0}: {1} - O={2}, H={3}, L={4}, C={5}", bar.Time, bar.Symbol, bar.Open, bar.High,
+                            bar.Low, bar.Close);
                     }
                 }
 
@@ -171,7 +174,6 @@ namespace QuantConnect.BybitBrokerage.Tests
                 else
                 {
                     Assert.Greater(historyProvider.DataPointCount, 0);
-
                 }
 
                 if (historyProvider.DataPointCount > 0)
@@ -211,7 +213,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 websocketUrl,
                 null,
                 new AggregationManager(),
-                null
+                null,
+                50
             );
         }
     }

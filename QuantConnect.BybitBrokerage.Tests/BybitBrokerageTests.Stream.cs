@@ -13,11 +13,13 @@
  * limitations under the License.
 */
 
+using System;
 using NUnit.Framework;
 using System.Threading;
 using QuantConnect.Data;
 using QuantConnect.Logging;
 using QuantConnect.Data.Market;
+using QuantConnect.Interfaces;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
@@ -32,8 +34,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 {
                     // valid parameters, for example
                     new TestCaseData(BTCUSDT, Resolution.Tick, false),
-                    new TestCaseData(BTCUSDT, Resolution.Minute, true),
-                    new TestCaseData(BTCUSDT, Resolution.Second, true),
+                    new TestCaseData(BTCUSDT, Resolution.Minute, false),
+                    new TestCaseData(BTCUSDT, Resolution.Second, false),
                 };
             }
         }
@@ -41,40 +43,69 @@ namespace QuantConnect.BybitBrokerage.Tests
         [Test, TestCaseSource(nameof(TestParameters))]
         public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
+            StreamsData(symbol, resolution, throwsException, Brokerage);
+        }
+
+        public static void StreamsData(Symbol symbol, Resolution resolution, bool throwsException,
+            IBrokerage brokerageInstance)
+        {
+            var startTime = DateTime.UtcNow;
             var cancelationToken = new CancellationTokenSource();
-            var brokerage = (BybitBrokerage)Brokerage;
+            var brokerage = (BybitBrokerage)brokerageInstance;
 
             SubscriptionDataConfig[] configs;
             if (resolution == Resolution.Tick)
             {
-                var tradeConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Trade);
-                var quoteConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Quote);
+                var tradeConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution),
+                    tickType: TickType.Trade);
+                var quoteConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution),
+                    tickType: TickType.Quote);
                 configs = new[] { tradeConfig, quoteConfig };
             }
             else
             {
-                configs = new[] {
+                configs = new[]
+                {
                     GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
-                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution) 
+                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution)
                 };
             }
 
+            var trade = new ManualResetEvent(false);
+            var quote = new ManualResetEvent(false);
             foreach (var config in configs)
             {
                 ProcessFeed(brokerage.Subscribe(config, (s, e) => { }),
                     cancelationToken,
-                    (baseData) => { if (baseData != null) { Log.Trace("{baseData}"); }
+                    (baseData) =>
+                    {
+                        if (baseData != null)
+                        {
+                            Assert.GreaterOrEqual(baseData.EndTime.Ticks, startTime.Ticks);
+
+                            if ((baseData as Tick)?.TickType == TickType.Quote || baseData is QuoteBar)
+                            {
+                                quote.Set();
+                            }
+                            else if ((baseData as Tick)?.TickType == TickType.Trade || baseData is TradeBar)
+                            {
+                                trade.Set();
+                            }
+
+                            Log.Trace($"Data received: {baseData}");
+                        }
                     });
             }
 
-            Thread.Sleep(20000);
+            Assert.IsTrue(trade.WaitOne(resolution.ToTimeSpan() + TimeSpan.FromSeconds(30)));
+            Assert.IsTrue(quote.WaitOne(resolution.ToTimeSpan() + TimeSpan.FromSeconds(30)));
 
             foreach (var config in configs)
             {
                 brokerage.Unsubscribe(config);
             }
 
-            Thread.Sleep(20000);
+            Thread.Sleep(2000);
 
             cancelationToken.Cancel();
         }

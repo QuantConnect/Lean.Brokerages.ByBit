@@ -11,6 +11,9 @@ using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BybitBrokerage.Tests;
 
+//todo manual tests
+// subscribe to everything and let it run for some time (a few days)
+// disconnect internet
 public partial class BybitFuturesBrokerageTests : BrokerageTests
 {
     protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");
@@ -19,9 +22,9 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
     protected override SecurityType SecurityType => SecurityType.Future;
     protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
     protected override decimal GetDefaultQuantity() => 0.001m;
+
     protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
     {
-
         var algorithm = new Mock<IAlgorithm>();
         var apiKey = Config.Get("bybit-api-key");
         var apiSecret = Config.Get("bybit-api-secret");
@@ -29,21 +32,22 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
         var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
         _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider, securityProvider,new AggregationManager(), null);
+        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
+            securityProvider, new AggregationManager(), null, 50);
     }
 
     protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
     {
-        return new BybitApi(SymbolMapper, null,apiKey, apiSecret, apiUrl);
+        return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
     }
-        
-        
+
+
     protected override bool IsAsync() => false;
 
     protected override decimal GetAskPrice(Symbol symbol)
-    {            var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
+    {
+        var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
         return _client.Market.GetTicker(BybitProductCategory.Linear, brokerageSymbol).Ask1Price!.Value;
-
     }
 
 
@@ -113,7 +117,7 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
     {
         base.LongFromShort(parameters);
     }
-    
+
     [Test, TestCaseSource(nameof(InverseSymbols))]
     public void InversePairNotSupported(Symbol symbol)
     {
@@ -121,6 +125,7 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
         var order = parameter.CreateLongOrder(GetDefaultQuantity());
 
         BrokerageMessageEvent brokerageMessageEvent = null;
+
         void OnBrokerageOnMessage(object sender, BrokerageMessageEvent @event)
         {
             brokerageMessageEvent = @event;
@@ -128,11 +133,9 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
         }
 
         Brokerage.Message += OnBrokerageOnMessage;
-        
+
         Assert.IsFalse(Brokerage.PlaceOrder(order));
         Assert.IsNotNull(brokerageMessageEvent);
         Assert.AreEqual($"Symbol is not supported {order.Symbol}", brokerageMessageEvent.Message);
-
     }
-        
 }

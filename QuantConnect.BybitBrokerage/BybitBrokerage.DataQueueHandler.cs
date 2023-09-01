@@ -12,7 +12,6 @@ public partial class BybitBrokerage
 {
     private IDataAggregator _aggregator;
 
-
     /// <summary>
     /// Subscribe to the specified configuration
     /// </summary>
@@ -81,7 +80,24 @@ public partial class BybitBrokerage
             aggregator,
             job,
             Market.Bybit,
+            int.Parse(job.BrokerageData[GetOrderBookDepthConfigName()]),
             vipLevel
         );
+    }
+
+    private string GetOrderBookDepthConfigName()
+    {
+        switch (Category)
+        {
+            case BybitProductCategory.Spot:
+                return "bybit-orderbook-depth";
+            case BybitProductCategory.Linear:
+            case BybitProductCategory.Inverse:
+                return "bybit-futures-orderbook-depth";
+            case BybitProductCategory.Option:
+                return "bybit-options-orderbook-depth";
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 }

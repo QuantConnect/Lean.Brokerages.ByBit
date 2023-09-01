@@ -109,7 +109,7 @@ public partial class BybitBrokerage
             order.BrokerId.Add(result.OrderId);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
-                Status = OrderStatus.Submitted //todo submitted to async? required at all.. what are that statuses actualy
+                Status = OrderStatus.Submitted
             });
             submitted = true;
         });
@@ -169,7 +169,7 @@ public partial class BybitBrokerage
         var canceled = false;
         _messageHandler.WithLockedStream(() =>
         {
-            if (order.Status == OrderStatus.Filled || order.Type == Orders.OrderType.Market) //todo can cancel
+            if (order.Status == OrderStatus.Filled || order.Type == Orders.OrderType.Market)
             {
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, "Order already filled"));
                 return;

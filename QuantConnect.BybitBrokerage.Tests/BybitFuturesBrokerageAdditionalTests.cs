@@ -24,10 +24,12 @@ namespace QuantConnect.BybitBrokerage.Tests
     public class BybitFuturesBrokerageAdditionalTests : BybitBrokerageAdditionalTests
     {
         protected override string BrokerageName => nameof(BybitFuturesBrokerage);
-        protected override Brokerage CreateBrokerage(IAlgorithm algorithm, string apiKey, string apiSecret, string apiUrl, string websocketUrl)
-        {
-            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,new AggregationManager(),null);
 
+        protected override Brokerage CreateBrokerage(IAlgorithm algorithm, string apiKey, string apiSecret,
+            string apiUrl, string websocketUrl)
+        {
+            return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,
+                new AggregationManager(), null, 50);
         }
     }
 }

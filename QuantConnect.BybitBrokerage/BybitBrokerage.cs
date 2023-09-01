@@ -22,6 +22,8 @@ namespace QuantConnect.BybitBrokerage;
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 {
+    private int _orderBookDepth;
+
     private IAlgorithm _algorithm;
     private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
     private LiveNodePacket _job;
@@ -80,12 +82,14 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
     /// <param name="aggregator">the aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
+    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job,
+        int orderBookDepth,
         BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, algorithm?.Portfolio?.Transactions,
-            algorithm?.Portfolio, aggregator, job, Market.Bybit, vipLevel)
+            algorithm?.Portfolio, aggregator, job, Market.Bybit, orderBookDepth, vipLevel)
     {
     }
 
@@ -102,10 +106,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="aggregator">The aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Market name</param>
+    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-        IDataAggregator aggregator, LiveNodePacket job, string marketName, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
+        IDataAggregator aggregator, LiveNodePacket job, string marketName, int orderBookDepth,
+        BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : base(marketName)
     {
         Initialize(
@@ -119,6 +125,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             aggregator,
             job,
             marketName,
+            orderBookDepth,
             vipLevel
         );
     }
@@ -166,8 +173,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
 
         return GetBarHistory(brokerageSymbol, request);
-
-
     }
 
     /// <summary>
@@ -183,11 +188,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="aggregator">The aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Market name</param>
+    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     private void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
         IDataAggregator aggregator, LiveNodePacket job,
-        string marketName, BybitVIPLevel vipLevel)
+        string marketName, int orderBookDepth, BybitVIPLevel vipLevel)
     {
         if (IsInitialized)
         {
@@ -202,6 +208,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _job = job;
         _algorithm = algorithm;
         _aggregator = aggregator;
+        _orderBookDepth = orderBookDepth;
         _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
         _symbolMapper = new(marketName);
         OrderProvider = orderProvider;
@@ -225,16 +232,16 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             _apiClientLazy = new Lazy<BybitApi>(() =>
             {
                 var client = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel);
-                
+
                 //Lazy connection to the private stream as it's not required when the brokerage is only used as DataQueueHandler
 
                 Authenticated += OnPrivateWSAuthenticated;
-                
+
                 Connect(client);
                 return client;
             });
         }
-        
+
         //todo ValidateSubscription(); 
     }
 
@@ -291,7 +298,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         base.Dispose();
     }
-    
+
     private IEnumerable<Tick> GetTickHistory(string brokerageSymbol, HistoryRequest request)
     {
         var res = new BybitHistoryApi()
@@ -307,7 +314,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
     private IEnumerable<TradeBar> GetBarHistory(string brokerageSymbol, HistoryRequest request)
     {
-        var client = ApiClient ?? GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null, BybitVIPLevel.VIP0);
+        var client = ApiClient ?? GetApiClient(_symbolMapper, null,
+            Config.Get("bybit-api-url", "https://api.bybit.com"), null, null, BybitVIPLevel.VIP0);
 
         var kLines = client.Market
             .GetKLines(Category, brokerageSymbol, request.Resolution, request.StartTimeUtc, request.EndTimeUtc);
@@ -320,7 +328,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 periodTimeSpan);
         }
     }
-    
+
     private static OrderStatus ConvertOrderStatus(Models.Enums.OrderStatus orderStatus)
     {
         switch (orderStatus)

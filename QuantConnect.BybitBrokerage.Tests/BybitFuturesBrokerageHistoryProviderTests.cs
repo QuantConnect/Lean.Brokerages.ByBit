@@ -191,7 +191,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 websocketUrl,
                 null,
                 new AggregationManager(),
-                null
+                null,
+                50
             );
         }
     }

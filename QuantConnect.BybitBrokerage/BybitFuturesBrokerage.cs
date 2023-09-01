@@ -30,12 +30,11 @@ namespace QuantConnect.BybitBrokerage
     [BrokerageFactory((typeof(BybitFuturesBrokerageFactory)))]
     public class BybitFuturesBrokerage : BybitBrokerage
     {
-        
         /// <summary>
         /// Account category
         /// </summary>
         protected override BybitProductCategory Category => BybitProductCategory.Linear;
-        
+
         /// <summary>
         /// Parameterless constructor for brokerage
         /// </summary>
@@ -49,7 +48,7 @@ namespace QuantConnect.BybitBrokerage
         public BybitFuturesBrokerage(string marketName) : base(marketName)
         {
         }
-        
+
         /// <summary>
         /// Constructor for brokerage
         /// </summary>
@@ -62,11 +61,14 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="securityProvider">The security provider is required</param>
         /// <param name="aggregator">The aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
+        /// <param name="orderBookDepth">The requested order book depth</param>
         /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
             IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-            IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit, vipLevel)
+            IDataAggregator aggregator, LiveNodePacket job, int orderBookDepth,
+            BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit, orderBookDepth,
+            vipLevel)
         {
         }
 
@@ -80,13 +82,14 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
+        /// <param name="orderBookDepth">The requested order book depth</param>
         /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, aggregator, job, vipLevel)
+            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, int orderBookDepth,
+            BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
+            webSocketBaseUrl, algorithm, aggregator, job, orderBookDepth, vipLevel)
         {
         }
-
 
 
         /// <summary>

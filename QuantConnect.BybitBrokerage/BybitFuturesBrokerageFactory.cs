@@ -12,7 +12,17 @@ namespace QuantConnect.BybitBrokerage;
 /// </summary>
 public class BybitFuturesBrokerageFactory : BybitBrokerageFactory
 {
-    
+    /// <summary>
+    /// The name of the config key representing the requested order book depth
+    /// <seealso href="https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook"/>
+    /// </summary>
+    protected override string OrderBookDepthConfigName => "bybit-futures-orderbook-depth";
+
+    /// <summary>
+    /// The default order book depth for this brokerage
+    /// </summary>
+    protected override int DefaultOrderBookDepth => 50;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BybitFuturesBrokerageFactory"/> class
     /// </summary>
@@ -36,12 +46,14 @@ public class BybitFuturesBrokerageFactory : BybitBrokerageFactory
     /// <param name="apiSecret">The api secret</param>
     /// <param name="apiUrl">The rest api url</param>
     /// <param name="wsUrl">The websocket base url</param>
+    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     /// <returns>A new brokerage instance</returns>
     protected override IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm, IDataAggregator aggregator,
         string apiKey,
-        string apiSecret, string apiUrl, string wsUrl, BybitVIPLevel vipLevel)
+        string apiSecret, string apiUrl, string wsUrl, BybitVIPLevel vipLevel, int orderBookDepth)
     {
-        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job,vipLevel);
+        return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, orderBookDepth,
+            vipLevel);
     }
 }

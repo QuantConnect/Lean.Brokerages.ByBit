@@ -32,6 +32,17 @@ namespace QuantConnect.BybitBrokerage
     public class BybitBrokerageFactory : BrokerageFactory
     {
         /// <summary>
+        /// The name of the config key representing the requested order book depth
+        /// <seealso href="https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook"/>
+        /// </summary>
+        protected virtual string OrderBookDepthConfigName => "bybit-orderbook-depth";
+
+        /// <summary>
+        /// The default order book depth for this brokerage
+        /// </summary>
+        protected virtual int DefaultOrderBookDepth => 50;
+
+        /// <summary>
         /// Gets the brokerage data required to run the brokerage from configuration/disk
         /// </summary>
         /// <remarks>
@@ -45,11 +56,16 @@ namespace QuantConnect.BybitBrokerage
             // paper trading available using https://api-testnet.bybit.com
             { "bybit-api-url", Config.Get("bybit-api-url", "https://api.bybit.com") },
             // paper trading available using wss://stream-testnet.bybit.com
-            { "bybit-websocket-url", Config.Get("bybit-websocket-url","wss://stream.bybit.com") },
-            { "bybit-vip-level", Config.Get("bybit-vip-level","VIP0")},
-            
+            { "bybit-websocket-url", Config.Get("bybit-websocket-url", "wss://stream.bybit.com") },
+            { "bybit-vip-level", Config.Get("bybit-vip-level", "VIP0") },
+
+            {
+                OrderBookDepthConfigName,
+                Config.Get(OrderBookDepthConfigName, DefaultOrderBookDepth.ToStringInvariant())
+            },
+
             // load holdings if available
-            { "live-holdings", Config.Get("live-holdings") },
+            { "live-holdings", Config.Get("live-holdings") }
         };
 
         /// <summary>
@@ -87,6 +103,7 @@ namespace QuantConnect.BybitBrokerage
             var apiUrl = Read<string>(job.BrokerageData, "bybit-api-url", errors);
             var wsUrl = Read<string>(job.BrokerageData, "bybit-websocket-url", errors);
             var vipLevel = Read<BybitVIPLevel>(job.BrokerageData, "bybit-vip-level", errors);
+            var orderBookDepth = Read<int>(job.BrokerageData, OrderBookDepthConfigName, errors);
 
             if (errors.Count != 0)
             {
@@ -94,11 +111,13 @@ namespace QuantConnect.BybitBrokerage
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
 
+
             var agg = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
 
-            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl, vipLevel);
+            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl, vipLevel,
+                orderBookDepth);
             Composer.Instance.AddPart(brokerage);
             return brokerage;
         }
@@ -113,13 +132,17 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="apiSecret">The api secret</param>
         /// <param name="apiUrl">The rest api url</param>
         /// <param name="wsUrl">The websocket base url</param>
+        /// <param name="orderBookDepth">The requested order book depth</param>
         /// <param name="vipLevel">Bybit VIP level</param>
         /// <returns>A new brokerage instance</returns>
         protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm,
-            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl, BybitVIPLevel vipLevel)
+            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl,
+            BybitVIPLevel vipLevel, int orderBookDepth)
         {
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, orderBookDepth,
+                vipLevel);
         }
+
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.

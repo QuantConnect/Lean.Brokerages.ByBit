@@ -29,9 +29,8 @@ namespace QuantConnect.BybitBrokerage.Tests
     [TestFixture]
     public class BybitBrokerageAdditionalTests
     {
-
         protected virtual string BrokerageName => nameof(BybitBrokerage);
-        
+
         [Test]
         public void ParameterlessConstructorComposerUsage()
         {
@@ -57,10 +56,11 @@ namespace QuantConnect.BybitBrokerage.Tests
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
-            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
+            algorithm.Setup(a => a.Portfolio)
+                .Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             using var brokerage = CreateBrokerage(algorithm.Object, true);
-            
+
             //this should throw while connecting to the private WS NOT in the GetCashBalance function
             var testDelegate = new TestDelegate(() => brokerage.GetCashBalance());
             Assert.Throws<Exception>(testDelegate);
@@ -84,7 +84,8 @@ namespace QuantConnect.BybitBrokerage.Tests
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
-            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
+            algorithm.Setup(a => a.Portfolio)
+                .Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             using var brokerage = CreateBrokerage(algorithm.Object);
 
@@ -98,7 +99,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             Assert.False(brokerage.IsConnected);
         }
-        
+
         private Brokerage CreateBrokerage(IAlgorithm algorithm, bool noSecrets = false)
         {
             var apiKey = noSecrets ? string.Empty : Config.Get("bybit-api-key");
@@ -112,7 +113,8 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected virtual Brokerage CreateBrokerage(IAlgorithm algorithm, string apiKey, string apiSecret,
             string apiUrl, string websocketUrl)
         {
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,new AggregationManager(),null);
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm, new AggregationManager(),
+                null, 50);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -23,6 +24,18 @@ namespace QuantConnect.BybitBrokerage;
 
 public partial class BybitBrokerage
 {
+    private class StreamAuthenticatedEventArgs : EventArgs
+    {
+        public string Message { get; init; }
+        public bool IsAuthenticated { get; init; }
+
+        public StreamAuthenticatedEventArgs(bool isAuthenticated, string message)
+        {
+            IsAuthenticated = isAuthenticated;
+            Message = message;
+        }
+    }
+
     private static readonly JsonSerializerSettings Settings = new()
     {
         Converters = new List<JsonConverter>() { new ByBitKlineJsonConverter(), new BybitDecimalStringConverter() },
@@ -35,11 +48,11 @@ public partial class BybitBrokerage
 
     private static JsonSerializer JsonSerializer => JsonSerializer.CreateDefault(Settings);
 
+    private event EventHandler<StreamAuthenticatedEventArgs> Authenticated;
+
     private readonly object _tickLocker = new();
+    private readonly ConcurrentDictionary<Symbol, DefaultOrderBook> _orderBooks = new();
 
-    private delegate void StreamAuthenticatedArgs(bool isSuccess, string message);
-
-    private event StreamAuthenticatedArgs Authenticated;
 
     private void OnUserMessage(WebSocketMessage webSocketMessage)
     {
@@ -166,6 +179,92 @@ public partial class BybitBrokerage
         }
     }
 
+    private void HandleOrderBookUpdate(JObject jObject)
+    {
+        var orderBookUpdate = jObject.ToObject<BybitDataMessage<BybitOrderBookUpdate>>(JsonSerializer);
+        var orderBookData = orderBookUpdate.Data;
+
+        if (orderBookUpdate.Type == BybitMessageType.Snapshot || orderBookUpdate.Data.UpdateId == 1)
+        {
+            HandleOrderBookSnapshot(orderBookData);
+        }
+        //delta
+        else
+        {
+            HandleOrderBookDelta(orderBookData);
+        }
+    }
+
+    private void HandleOrderBookSnapshot(BybitOrderBookUpdate orderBookUpdate)
+    {
+        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSupportedSecurityType(), MarketName);
+
+        if (!_orderBooks.TryGetValue(symbol, out var orderBook))
+        {
+            orderBook = new DefaultOrderBook(symbol);
+            _orderBooks[symbol] = orderBook;
+        }
+        else
+        {
+            orderBook.BestBidAskUpdated -= OnBestBidAskUpdated;
+            orderBook.Clear();
+        }
+
+        foreach (var row in orderBookUpdate.Bids)
+        {
+            orderBook.UpdateBidRow(row.Price, row.Size);
+        }
+
+        foreach (var row in orderBookUpdate.Asks)
+        {
+            orderBook.UpdateAskRow(row.Price, row.Size);
+        }
+
+        orderBook.BestBidAskUpdated += OnBestBidAskUpdated;
+        EmitQuoteTick(symbol, orderBook.BestBidPrice, orderBook.BestBidSize, orderBook.BestAskPrice,
+            orderBook.BestAskSize);
+    }
+
+    private void HandleOrderBookDelta(BybitOrderBookUpdate orderBookUpdate)
+    {
+        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSupportedSecurityType(), MarketName);
+
+        if (!_orderBooks.TryGetValue(symbol, out var orderBook))
+        {
+            Log.Error($"Attempting to update a non existent order book for {symbol}");
+            return;
+        }
+
+        foreach (var row in orderBookUpdate.Bids)
+        {
+            if (row.Size == 0)
+            {
+                orderBook.RemoveBidRow(row.Price);
+            }
+            else
+            {
+                orderBook.UpdateBidRow(row.Price, row.Size);
+            }
+        }
+
+        foreach (var row in orderBookUpdate.Asks)
+        {
+            if (row.Size == 0)
+            {
+                orderBook.RemoveAskRow(row.Price);
+            }
+            else
+            {
+                orderBook.UpdateAskRow(row.Price, row.Size);
+            }
+        }
+    }
+
+    private void OnBestBidAskUpdated(object sender, BestBidAskUpdatedEventArgs e)
+    {
+        EmitQuoteTick(e.Symbol, e.BestBidPrice, e.BestBidSize, e.BestAskPrice, e.BestAskSize);
+    }
+
     //Todo: This needs to be removed, but for now it fixes the issues I was facing with the tests expecting the status of the original order object being
     //      updated. While the OrderProvider being used in the test returns copies of each order.
     private void TestFix(int orderId, Orders.OrderStatus status)
@@ -205,9 +304,9 @@ public partial class BybitBrokerage
                 {
                     HandleTradeMessage(obj);
                 }
-                else if (topicStr.StartsWith("tickers"))
+                else if (topicStr.StartsWith("orderbook"))
                 {
-                    HandleTickerMessage(obj);
+                    HandleOrderBookUpdate(obj);
                 }
             }
         }
@@ -218,29 +317,15 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleTickerMessage(JToken message)
-    {
-        var tickerMessage = JsonConvert.DeserializeObject<BybitDataMessage<BybitTicker>>(message.ToString(), Settings);
-        var ticker = tickerMessage.Data;
-
-        var bidPrice = ticker.Bid1Price;
-        var bidSize = ticker.Bid1Size;
-        var askPrice = ticker.Ask1Price;
-        var askSize = ticker.Ask1Size;
-
-        if (!bidPrice.HasValue || !bidSize.HasValue | !askPrice.HasValue || !askSize.HasValue) return;
-        EmitQuoteTick(_symbolMapper.GetLeanSymbol(ticker.Symbol, GetSupportedSecurityType(), MarketName),
-            bidPrice.Value, bidSize.Value, askPrice.Value, askSize.Value);
-    }
-
     private void HandleTradeMessage(JToken message)
     {
         var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
         foreach (var trade in trades.Data)
         {
             //Todo validate, we were talking about this in the meeting, negative value should be possible here as each trade always has a direction
-            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1; 
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time, trade.Price, tradeValue);
+            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
+                trade.Price, tradeValue);
         }
     }
 
@@ -255,7 +340,8 @@ public partial class BybitBrokerage
 
         if (dataMessage.Operation == "auth")
         {
-            Authenticated?.Invoke(dataMessage.Success, dataMessage.ReturnMessage);
+            Authenticated?.Invoke(this,
+                new StreamAuthenticatedEventArgs(dataMessage.Success, dataMessage.ReturnMessage));
             if (!dataMessage.Success)
             {
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
@@ -313,20 +399,30 @@ public partial class BybitBrokerage
     /// <param name="symbol">The symbol to subscribe</param>
     private bool Subscribe(IWebSocket webSocket, Symbol symbol)
     {
-        var s = _symbolMapper.GetBrokerageSymbol(symbol);
+        var depthString = _orderBookDepth.ToStringInvariant();
+        if (!IsOrderBookDepthSupported(Category, _orderBookDepth))
+        {
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                $"Configured order book depth of '{depthString}' is not supported by {Category.ToStringInvariant()}"));
+            return false;
+        }
+
+        var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
         Send(webSocket,
             new
             {
                 op = "subscribe",
                 args = new[]
                 {
-                    $"publicTrade.{s}",
-                    $"tickers.{s}" //Push frequency: Derivatives & Options - 100ms, Spot - real-time
+                    $"publicTrade.{brokerageSymbol}",
+                    $"orderbook.{depthString}.{brokerageSymbol}"
+                    //$"tickers.{s}" //Push frequency: Derivatives & Options - 100ms, Spot - real-time
                 }
             }
         );
         return true;
     }
+
 
     /// <summary>
     /// Ends current subscription
@@ -335,16 +431,17 @@ public partial class BybitBrokerage
     /// <param name="symbol">The symbol to unsubscribe</param>
     private bool Unsubscribe(IWebSocket webSocket, Symbol symbol)
     {
-        var s = _symbolMapper.GetBrokerageSymbol(symbol);
-
+        var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
+        var depthString = _orderBookDepth.ToStringInvariant();
         Send(webSocket,
             new
             {
                 op = "unsubscribe",
                 args = new[]
                 {
-                    $"publicTrade.{s}",
-                    $"tickers.{s}"
+                    $"publicTrade.{brokerageSymbol}",
+                    $"orderbook.{depthString}.{brokerageSymbol}"
+                    //$"tickers.{leanSymbol}"
                 }
             }
         );
@@ -386,9 +483,9 @@ public partial class BybitBrokerage
         AuthenticatePrivateWS(ApiClient, TimeSpan.FromSeconds(30));
     }
 
-    private void OnPrivateWSAuthenticated(bool isAuthenticated, string message)
+    private void OnPrivateWSAuthenticated(object _, StreamAuthenticatedEventArgs args)
     {
-        if (isAuthenticated)
+        if (args.IsAuthenticated)
         {
             Send(WebSocket, new { op = "subscribe", args = new[] { "order", "execution" } });
         }
@@ -399,10 +496,10 @@ public partial class BybitBrokerage
         var resetEvent = new ManualResetEvent(false);
         var authenticated = false;
 
-        void OnAuthenticated(bool success, string _)
+        void OnAuthenticated(object _, StreamAuthenticatedEventArgs args)
         {
             resetEvent.Set();
-            authenticated = success;
+            authenticated = args.IsAuthenticated;
         }
 
         Authenticated += OnAuthenticated;
@@ -418,6 +515,39 @@ public partial class BybitBrokerage
     private void AuthenticatePrivateWS(BybitApi api, TimeSpan authValidFor)
     {
         Send(WebSocket, api.AuthenticateWebSocket(authValidFor));
+    }
+
+    private static bool IsOrderBookDepthSupported(BybitProductCategory category, int depth)
+    {
+        /*
+           Order book push frequencies
+           
+           Linear & inverse:
+           Level 1 data, push frequency: 10ms
+           Level 50 data, push frequency: 20ms
+           Level 200 data, push frequency: 100ms
+           Level 500 data, push frequency: 100ms
+
+           Spot:
+           Level 1 data, push frequency: 10ms
+           Level 50 data, push frequency: 20ms
+
+           Option:
+           Level 25 data, push frequency: 20ms
+           Level 100 data, push frequency: 100ms
+        */
+        switch (category)
+        {
+            case BybitProductCategory.Spot:
+                return Array.IndexOf(new[] { 1, 50 }, depth) >= 0;
+            case BybitProductCategory.Linear:
+            case BybitProductCategory.Inverse:
+                return Array.IndexOf(new[] { 1, 50, 200, 500 }, depth) >= 0;
+            case BybitProductCategory.Option:
+                return Array.IndexOf(new[] { 25, 100 }, depth) >= 0;
+            default:
+                return false;
+        }
     }
 
     private static bool IsAccountMarginStatusValid(BybitApi api, out BrokerageMessageEvent message)

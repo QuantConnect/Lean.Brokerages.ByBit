@@ -55,7 +55,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
         protected virtual Brokerage CreateBrokerage(string apiUrl)
         {
-            return new BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null);
+            return new BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null, 0);
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
         protected override Brokerage CreateBrokerage(string apiUrl)
         {
-            return new BybitFuturesBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null);
+            return new BybitFuturesBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null, 0);
         }
     }
     

@@ -53,9 +53,8 @@ namespace QuantConnect.BybitBrokerage.Tests
         [SetUp]
         public void Setup()
         {
-            
-             //todo:  Market Buy orders on spot need to be send in the quote currency should we move that responsibility to the user
-             //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? - might be fixed
+            //todo:  Market Buy orders on spot need to be send in the quote currency should we move that responsibility to the user
+            //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? - might be fixed
         }
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
@@ -69,7 +68,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
             return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
-                securityProvider, new AggregationManager(), null, Market.Bybit);
+                securityProvider, new AggregationManager(), null, Market.Bybit, 50);
         }
 
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
@@ -208,7 +207,8 @@ namespace QuantConnect.BybitBrokerage.Tests
             Assert.AreEqual(GetDefaultQuantity(), afterQuantity - beforeQuantity + fee);
         }
 
-        protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters, double secondsTimeout = 90)
+        protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters,
+            double secondsTimeout = 90)
         {
             Assert.Pass("Order update not supported. Please cancel and re-create.");
         }
