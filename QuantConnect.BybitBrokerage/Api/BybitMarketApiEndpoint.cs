@@ -157,7 +157,6 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
     public IEnumerable<BybitOpenInterestInfo> GetOpenInterest(BybitProductCategory category, string symbol,
         Resolution resolution, DateTime from, DateTime to)
     {
-        //todo reverse similiar to kline
         if (category == BybitProductCategory.Spot)
         {
             throw new NotSupportedException("Open interest data is not available for spot");

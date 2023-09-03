@@ -457,7 +457,6 @@ public partial class BybitBrokerage
         WebSocket.Initialize(_privateWebSocketUrl);
 
         // When connect is called from the api client factory the ApiClient instance property is not set yet
-        // to get rid of the deferred reference the OnOpen handler is replaced with the instance handler
         api ??= ApiClient;
 
         //todo maybe there is a better place to validate this

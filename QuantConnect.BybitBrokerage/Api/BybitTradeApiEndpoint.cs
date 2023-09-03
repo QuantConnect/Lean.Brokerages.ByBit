@@ -95,8 +95,6 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
         }
 
         return FetchAll<BybitOrder>("/order/realtime", category, 50, parameters, true);
-        //return FetchAll(category, FetchOpenOrders,
-        //  x => x.List.Length < 50); //todo why is there a next page in the first place.... double check API
     }
 
 
@@ -121,7 +119,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
             ReduceOnly = properties?.ReduceOnly,
         };
 
-        //todo close on trigger
+        //todo close on trigger?
         if (IsLimitType(order.Type))
         {
             req.TimeInForce = properties?.PostOnly == true ? TimeInForce.PostOnly : null;
