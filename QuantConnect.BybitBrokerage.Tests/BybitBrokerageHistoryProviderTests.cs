@@ -141,7 +141,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                         DataNormalizationMode.Adjusted,
                         tickType)
                 };
-
+                
                 var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc).ToArray();
                 foreach (var slice in historyArray)
                 {
@@ -181,6 +181,17 @@ namespace QuantConnect.BybitBrokerage.Tests
                     // No repeating bars
                     var timesArray = historyArray.Select(x => x.Time).ToArray();
                     Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
+
+
+                    // No missing bars
+                    if (resolution != Resolution.Tick && historyProvider.DataPointCount >= 2)
+                    {
+                        var diff = resolution.ToTimeSpan();
+                        for (var i = 1; i < timesArray.Length; i++)
+                        {
+                            Assert.AreEqual(diff, timesArray[i] - timesArray[i - 1]);
+                        }
+                    }
                 }
 
                 Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);

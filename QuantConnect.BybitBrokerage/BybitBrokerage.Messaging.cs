@@ -54,6 +54,10 @@ public partial class BybitBrokerage
     private readonly ConcurrentDictionary<Symbol, DefaultOrderBook> _orderBooks = new();
 
 
+    /// <summary>
+    /// Processes WSS messages from the private user data streams
+    /// </summary>
+    /// <param name="webSocketMessage">The message to process</param>
     private void OnUserMessage(WebSocketMessage webSocketMessage)
     {
         var e = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
@@ -90,18 +94,18 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleOrderExecution(JObject jObject)
+    private void HandleOrderExecution(JToken message)
     {
-        var tradeUpdates = jObject.ToObject<BybitDataMessage<BybitTradeUpdate[]>>(JsonSerializer).Data;
+        var tradeUpdates = message.ToObject<BybitDataMessage<BybitTradeUpdate[]>>(JsonSerializer).Data;
         foreach (var tradeUpdate in tradeUpdates)
         {
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(tradeUpdate.OrderId).FirstOrDefault();
             if (leanOrder == null) continue;
 
-            if (tradeUpdate.ExecutionType is not (ExecutionType.Trade))
+            // We are only interested in actual order executions, other types like liquidations are not needed. Todo is this true?
+            if (tradeUpdate.ExecutionType is not ExecutionType.Trade)
             {
-                Log.Trace(jObject.ToString());
-                continue; //todo verify
+                continue;
             }
 
             var symbol = tradeUpdate.Symbol;
@@ -132,8 +136,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionQuantity,
                 fee);
 
-            Log.Trace(
-                $"Orderstatus changed {leanOrder.Status.ToStringInvariant()} => {status.ToStringInvariant()} from {tradeUpdate.ExecutionType?.ToStringInvariant()}");
+
             TestFix(leanOrder.Id, status);
             OnOrderEvent(orderEvent);
         }
@@ -157,25 +160,113 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleOrderUpdate(JObject jObject)
+    private void HandleOrderUpdate(JToken message)
     {
-        var orders = jObject.ToObject<BybitDataMessage<BybitOrder[]>>(JsonSerializer).Data;
+        var orders = message.ToObject<BybitDataMessage<BybitOrder[]>>(JsonSerializer).Data;
         foreach (var order in orders)
         {
             //We're not interested in order executions here as HandleOrderExecution is taking care of this
             if (order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
 
-            //This should imo only be one order but the test OrderProvider is cloning them
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(order.OrderId).FirstOrDefault();
             if (leanOrder == null) continue;
 
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
-
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             TestFix(leanOrder.Id, newStatus);
             OnOrderEvent(orderEvent);
+        }
+    }
+
+    //Todo: This needs to be removed, but for now it fixes the issues I was facing with the tests expecting the status of the original order object being
+    //      updated. While the OrderProvider being used in the test returns copies of each order.
+    private void TestFix(int orderId, Orders.OrderStatus status)
+    {
+        OrderProvider.GetOrders(x =>
+        {
+            if (x.Id == orderId)
+            {
+                x.Status = status;
+                return true;
+            }
+
+            return false;
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+        }).ToArray();
+    }
+
+    /// <summary>
+    /// Processes WSS messages from the public market data streams
+    /// </summary>
+    /// <param name="webSocketMessage">The message to process</param>
+    private void OnDataMessage(WebSocketMessage webSocketMessage)
+    {
+        var data = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
+        try
+        {
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug($"{nameof(BybitBrokerage)}.{nameof(OnDataMessage)}(): {data.Message}");
+            }
+
+            var obj = JObject.Parse(data.Message);
+            if (obj.TryGetValue("op", out _))
+            {
+                HandleOperationMessage(obj);
+            }
+
+            // The topic for market data is {topic}.{symbol}
+            else if (obj.TryGetValue("topic", out var topic))
+            {
+                var topicStr = topic.Value<string>();
+                if (topicStr.StartsWith("publicTrade"))
+                {
+                    HandleTradeMessage(obj);
+                }
+                else if (topicStr.StartsWith("orderbook"))
+                {
+                    HandleOrderBookUpdate(obj);
+                }
+                else if (topicStr.StartsWith("tickers"))
+                {
+                    HandleTickerMessage(obj);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                $"Parsing wss message failed. Data: {e.Message} Exception: {e}"));
+        }
+    }
+
+    private void HandleTickerMessage(JToken message)
+    {
+        var tickerMessage = JsonConvert.DeserializeObject<BybitDataMessage<BybitTicker>>(message.ToString(), Settings);
+        var ticker = tickerMessage.Data;
+
+        if (!ticker.OpenInterest.HasValue) return;
+
+        var leanSymbol = _symbolMapper.GetLeanSymbol(ticker.Symbol, GetSupportedSecurityType(), MarketName);
+
+        var tick = new OpenInterest(tickerMessage.Time, leanSymbol, ticker.OpenInterest.Value);
+        lock (_tickLocker)
+        {
+            _aggregator.Update(tick);
+        }
+    }
+
+    private void HandleTradeMessage(JToken message)
+    {
+        var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
+        foreach (var trade in trades.Data)
+        {
+            //Todo validate, we were talking about this in the meeting, negative value should be possible here as each trade always has a direction
+            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
+                trade.Price, tradeValue);
         }
     }
 
@@ -188,7 +279,7 @@ public partial class BybitBrokerage
         {
             HandleOrderBookSnapshot(orderBookData);
         }
-        //delta
+        // Delta
         else
         {
             HandleOrderBookDelta(orderBookData);
@@ -265,70 +356,6 @@ public partial class BybitBrokerage
         EmitQuoteTick(e.Symbol, e.BestBidPrice, e.BestBidSize, e.BestAskPrice, e.BestAskSize);
     }
 
-    //Todo: This needs to be removed, but for now it fixes the issues I was facing with the tests expecting the status of the original order object being
-    //      updated. While the OrderProvider being used in the test returns copies of each order.
-    private void TestFix(int orderId, Orders.OrderStatus status)
-    {
-        OrderProvider.GetOrders(x =>
-        {
-            if (x.Id == orderId)
-            {
-                x.Status = status;
-                return true;
-            }
-
-            return false;
-            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-        }).ToArray();
-    }
-
-    private void OnDataMessage(WebSocketMessage webSocketMessage)
-    {
-        var data = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
-        try
-        {
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug($"{nameof(BybitBrokerage)}.{nameof(OnDataMessage)}(): {data.Message}");
-            }
-
-            var obj = JObject.Parse(data.Message);
-            if (obj.TryGetValue("op", out _))
-            {
-                HandleOperationMessage(obj);
-            }
-            else if (obj.TryGetValue("topic", out var topic))
-            {
-                var topicStr = topic.Value<string>();
-                if (topicStr.StartsWith("publicTrade"))
-                {
-                    HandleTradeMessage(obj);
-                }
-                else if (topicStr.StartsWith("orderbook"))
-                {
-                    HandleOrderBookUpdate(obj);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
-                $"Parsing wss message failed. Data: {e.Message} Exception: {e}"));
-        }
-    }
-
-    private void HandleTradeMessage(JToken message)
-    {
-        var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
-        foreach (var trade in trades.Data)
-        {
-            //Todo validate, we were talking about this in the meeting, negative value should be possible here as each trade always has a direction
-            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
-                trade.Price, tradeValue);
-        }
-    }
-
     private void HandleOperationMessage(JToken message)
     {
         var dataMessage = message.ToObject<BybitOperationResponseMessage>();
@@ -340,8 +367,6 @@ public partial class BybitBrokerage
 
         if (dataMessage.Operation == "auth")
         {
-            Authenticated?.Invoke(this,
-                new StreamAuthenticatedEventArgs(dataMessage.Success, dataMessage.ReturnMessage));
             if (!dataMessage.Success)
             {
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
@@ -351,6 +376,9 @@ public partial class BybitBrokerage
             {
                 Log.Trace("BybitBrokerage.HandleOpMessage() Successfully authenticated private stream");
             }
+
+            Authenticated?.Invoke(this,
+                new StreamAuthenticatedEventArgs(dataMessage.Success, dataMessage.ReturnMessage));
         }
     }
 
@@ -360,7 +388,7 @@ public partial class BybitBrokerage
         {
             Symbol = symbol,
             Value = price,
-            Quantity = Math.Abs(quantity),
+            Quantity = quantity,
             Time = time,
             TickType = TickType.Trade
         };
@@ -407,22 +435,16 @@ public partial class BybitBrokerage
             return false;
         }
 
-        var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
+
         Send(webSocket,
             new
             {
                 op = "subscribe",
-                args = new[]
-                {
-                    $"publicTrade.{brokerageSymbol}",
-                    $"orderbook.{depthString}.{brokerageSymbol}"
-                    //$"tickers.{s}" //Push frequency: Derivatives & Options - 100ms, Spot - real-time
-                }
+                args = GetTopics(symbol)
             }
         );
         return true;
     }
-
 
     /// <summary>
     /// Ends current subscription
@@ -431,22 +453,36 @@ public partial class BybitBrokerage
     /// <param name="symbol">The symbol to unsubscribe</param>
     private bool Unsubscribe(IWebSocket webSocket, Symbol symbol)
     {
-        var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-        var depthString = _orderBookDepth.ToStringInvariant();
         Send(webSocket,
             new
             {
                 op = "unsubscribe",
-                args = new[]
-                {
-                    $"publicTrade.{brokerageSymbol}",
-                    $"orderbook.{depthString}.{brokerageSymbol}"
-                    //$"tickers.{leanSymbol}"
-                }
+                args = GetTopics(symbol)
             }
         );
 
         return true;
+    }
+
+    private List<string> GetTopics(Symbol symbol)
+    {
+        var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
+        var depthString = _orderBookDepth.ToStringInvariant();
+
+        var topics = new List<string>
+        {
+            $"publicTrade.{brokerageSymbol}",
+            $"orderbook.{depthString}.{brokerageSymbol}"
+        };
+
+        // This is required for open interest
+        // if (Category != BybitProductCategory.Spot)
+        // {
+        //     topics.Add($"tickers.{brokerageSymbol}");
+        // }
+
+
+        return topics;
     }
 
     private void Connect(BybitApi api)
@@ -518,6 +554,7 @@ public partial class BybitBrokerage
     private static bool IsOrderBookDepthSupported(BybitProductCategory category, int depth)
     {
         /*
+           Todo: what should be the default
            Order book push frequencies
            
            Linear & inverse:
