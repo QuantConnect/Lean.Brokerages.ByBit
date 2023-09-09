@@ -262,6 +262,13 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         {
             _apiClientLazy = new Lazy<BybitApi>(() =>
             {
+                // Api credentials are required for the private stream
+
+                if (string.IsNullOrEmpty(apiSecret) || string.IsNullOrEmpty(apiSecret))
+                {
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1, "Api credentials missing"));
+                    throw new Exception("Api credentials missing");
+                }
                 var client = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel);
 
                 //Lazy connection to the private stream as it's not required when the brokerage is only used as DataQueueHandler

@@ -46,7 +46,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitProductCategory.Linear));
             //var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
             var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitProductCategory.Spot));
-
+            
+            //todo how to handle prefixed symbols like 10000LADYSUSDT 
             var symbols = new[] { linear, spot }
                     .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            
          

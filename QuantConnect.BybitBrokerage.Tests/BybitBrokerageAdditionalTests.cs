@@ -60,10 +60,22 @@ namespace QuantConnect.BybitBrokerage.Tests
                 .Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             using var brokerage = CreateBrokerage(algorithm.Object, true);
+            BrokerageMessageEvent message = null;
+            void OnMessage(object sender, BrokerageMessageEvent e)
+            {
+                message = e;
+            }
+            brokerage.Message += OnMessage;
 
-            //this should throw while connecting to the private WS NOT in the GetCashBalance function
+            // This should throw while creating the api client
             var testDelegate = new TestDelegate(() => brokerage.GetCashBalance());
             Assert.Throws<Exception>(testDelegate);
+
+            brokerage.Message -= OnMessage;
+            
+            Assert.AreEqual("-1",message.Code);
+            Assert.AreEqual("Api credentials missing",message.Message);
+
         }
 
         [Test]
