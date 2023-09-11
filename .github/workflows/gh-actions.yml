@@ -21,7 +21,7 @@ jobs:
         continue-on-error: true
         with:
           ref: ${{ github.ref }}
-          repository: arodus/Lean
+          repository: QuantConnect/Lean
           path: Lean
 
       - name: Checkout Lean Master
