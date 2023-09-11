@@ -135,9 +135,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionPrice,
                 tradeUpdate.ExecutionQuantity,
                 fee);
-
-
-            TestFix(leanOrder.Id, status);
+            
             OnOrderEvent(orderEvent);
         }
 
@@ -175,27 +173,10 @@ public partial class BybitBrokerage
             if (newStatus == leanOrder.Status) continue;
 
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
-            TestFix(leanOrder.Id, newStatus);
             OnOrderEvent(orderEvent);
         }
     }
-
-    //Todo: This needs to be removed, but for now it fixes the issues I was facing with the tests expecting the status of the original order object being
-    //      updated. While the OrderProvider being used in the test returns copies of each order.
-    private void TestFix(int orderId, Orders.OrderStatus status)
-    {
-        OrderProvider.GetOrders(x =>
-        {
-            if (x.Id == orderId)
-            {
-                x.Status = status;
-                return true;
-            }
-
-            return false;
-            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-        }).ToArray();
-    }
+    
 
     /// <summary>
     /// Processes WSS messages from the public market data streams
