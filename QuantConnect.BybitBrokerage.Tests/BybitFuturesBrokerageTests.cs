@@ -11,9 +11,7 @@ using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BybitBrokerage.Tests;
 
-//todo manual tests
-// subscribe to everything and let it run for some time (a few days)
-// disconnect internet
+
 public partial class BybitFuturesBrokerageTests : BrokerageTests
 {
     protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.CryptoFuture, "bybit");

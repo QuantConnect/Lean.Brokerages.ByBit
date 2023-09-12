@@ -25,7 +25,6 @@ namespace QuantConnect.BybitBrokerage
 {
     /// <summary>
     /// Bybit futures brokerage implementation
-    /// todo: inverse
     /// </summary>
     [BrokerageFactory((typeof(BybitFuturesBrokerageFactory)))]
     public class BybitFuturesBrokerage : BybitBrokerage

@@ -134,7 +134,6 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
             ReduceOnly = properties?.ReduceOnly,
         };
 
-        //todo close on trigger?
         if (IsLimitType(order.Type))
         {
             req.TimeInForce = properties?.PostOnly == true ? TimeInForce.PostOnly : null;
@@ -151,8 +150,8 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
                 if (category == BybitProductCategory.Spot && order.Direction == OrderDirection.Buy)
                 {
                     var price = GetTickerPrice(category, order);
-                    req.Quantity *=
-                        price; //todo: spot market buys require price in quote currency is this a good place to do this?
+                    // Spot market buy orders require price in quote currency
+                    req.Quantity *= price; 
                 }
 
                 break;
