@@ -38,6 +38,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 Assert.IsTrue(tickerLine.StartsWith(eid.Market, StringComparison.OrdinalIgnoreCase));
                 var data = tickerLine.Split(",");
                 Assert.AreEqual(10, data.Length);
+                
+                Assert.IsFalse(data[1].StartsWith("10"));
             }
         }
     }

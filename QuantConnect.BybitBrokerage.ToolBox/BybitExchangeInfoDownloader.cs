@@ -44,11 +44,10 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             using var client = new BybitApi(null, null,null, null, apiUrl);
 
             var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitProductCategory.Linear));
-            //var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitAccountCategory.Inverse));
+            var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitProductCategory.Inverse));
             var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitProductCategory.Spot));
             
-            //todo how to handle prefixed symbols like 10000LADYSUSDT 
-            var symbols = new[] { linear, spot }
+            var symbols = new[] { linear,inverse, spot }
                     .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            
          
                 foreach (var symbol in symbols)
@@ -62,10 +61,13 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         private string GetInstrumentInfoString(BybitInstrumentInfo info, SecurityType securityType)
         {
             var securityTypeStr = securityType.ToStringInvariant().ToLowerInvariant();
-            //market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier
-            //todo do we need price scale and magnifier?
+            
+            // Remove multiplier prefix from symbols like 10000LADYSUSDT. Not 1 as there is also 1INCHUSDT 
+            var symbolName = info.Symbol.StartsWith("10") ? info.Symbol.TrimStart('0','1') : info.Symbol; 
+            
+            // market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier
             return
-                $"{Market.ToLowerInvariant()},{info.Symbol},{securityTypeStr},{info.Symbol},{info.QuoteCoin},1,{info.PriceFilter.TickSize},{info.LotSizeFilter.QuantityStep ?? info.LotSizeFilter.BasePrecision},{info.Symbol},{info.LotSizeFilter.MinOrderQuantity}";
+                $"{Market.ToLowerInvariant()},{symbolName},{securityTypeStr},{info.Symbol},{info.QuoteCoin},1,{info.PriceFilter.TickSize},{info.LotSizeFilter.QuantityStep ?? info.LotSizeFilter.BasePrecision},{info.Symbol},{info.LotSizeFilter.MinOrderQuantity}";
         }
     }
 }
