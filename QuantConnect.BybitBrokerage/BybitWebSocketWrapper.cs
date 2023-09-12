@@ -27,19 +27,6 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
     private Timer _pingTimer;
     
     /// <summary>
-    /// The unique id for the connection
-    /// </summary>
-    public string ConnectionId { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BybitWebSocketWrapper"/> class
-    /// </summary>
-    public BybitWebSocketWrapper()
-    {
-        ConnectionId = Guid.NewGuid().ToString();
-    }
-
-    /// <summary>
     /// Event invocator for the <see cref="WebSocketClientWrapper.Open"/> event
     /// </summary>
     protected override void OnOpen()
