@@ -11,7 +11,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Description>QuantConnect LEAN Template Brokerage: Brokerage Template plugin for Lean</Description>
+    <Description>QuantConnect LEAN Bybit Brokerage: Bybit Brokerage plugin for Lean</Description>
     <PackageId>QuantConnect.BybitBrokerage</PackageId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

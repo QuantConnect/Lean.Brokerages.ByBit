@@ -6,14 +6,14 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <Copyright>Copyright ©  2021</Copyright>
-        <OutputPath>..\..\Lean\Launcher\bin\$(Configuration)\</OutputPath>
+        <OutputPath>bin\$(Configuration)\</OutputPath>
         <Product>QuantConnect.BybitBrokerage.ToolBox</Product>
         <RootNamespace>QuantConnect.BybitBrokerage.ToolBox</RootNamespace>
         <AssemblyTitle>QuantConnect.BybitBrokerage.ToolBox</AssemblyTitle>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <Description>QuantConnect LEAN Template Brokerage: Brokerage Template toolbox plugin for Lean</Description>
+        <Description>QuantConnect LEAN Bybit Brokerage: Bybit Brokerage toolbox plugin for Lean</Description>
         <PackageId>QuantConnect.BybitBrokerage.ToolBox</PackageId>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
