@@ -259,10 +259,8 @@ public partial class BybitBrokerage
         var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
         foreach (var trade in trades.Data)
         {
-            //Todo validate, we were talking about this in the meeting, negative value should be possible here as each trade always has a direction
-            var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
-                trade.Price, tradeValue);
+            // var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time, trade.Price, trade.Value);
         }
     }
 
@@ -472,12 +470,11 @@ public partial class BybitBrokerage
         };
 
         // This is required for open interest
-        // if (Category != BybitProductCategory.Spot)
-        // {
-        //     topics.Add($"tickers.{brokerageSymbol}");
-        // }
-
-
+        if (Category != BybitProductCategory.Spot)
+        {
+            topics.Add($"tickers.{brokerageSymbol}");
+        }
+        
         return topics;
     }
 
@@ -549,7 +546,6 @@ public partial class BybitBrokerage
     private static bool IsOrderBookDepthSupported(BybitProductCategory category, int depth)
     {
         /*
-           Todo: what should be the default
            Order book push frequencies
            
            Linear & inverse:
@@ -566,6 +562,7 @@ public partial class BybitBrokerage
            Level 25 data, push frequency: 20ms
            Level 100 data, push frequency: 100ms
         */
+        
         switch (category)
         {
             case BybitProductCategory.Spot:

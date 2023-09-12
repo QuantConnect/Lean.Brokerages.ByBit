@@ -46,12 +46,12 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
     /// Query for historical KLines (also known as candles/candlesticks). Charts are returned in groups based on the requested interval
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to query the data for</param>
+    /// <param name="ticker">The ticker to query the data for</param>
     /// <param name="resolution">The desired resolution</param>
     /// <param name="from">The desired start time</param>
     /// <param name="to">The end time</param>
     /// <returns>An enumerable of KLines</returns>
-    public IEnumerable<ByBitKLine> GetKLines(BybitProductCategory category, string symbol, Resolution resolution,
+    public IEnumerable<ByBitKLine> GetKLines(BybitProductCategory category, string ticker, Resolution resolution,
         DateTime from, DateTime to)
     {
         var fromMs = (long)Time.DateTimeToUnixTimeStampMilliseconds(from);
@@ -69,7 +69,7 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
             var currentTo = Math.Min(fromMs + maxTimeSpanInMs, toMs);
 
             //Bybit returns the KLines from newest to oldest, so we need to reverse them
-            var kLines = FetchKLines(category, symbol, resolution, maxKLinesPerRequest, fromMs, currentTo)
+            var kLines = FetchKLines(category, ticker, resolution, maxKLinesPerRequest, fromMs, currentTo)
                 .Reverse();
 
             var lastCandleOpen = fromMs;
@@ -100,12 +100,12 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
         }
     }
 
-    private ByBitKLine[] FetchKLines(BybitProductCategory category, string symbol, Resolution resolution, int limit,
+    private ByBitKLine[] FetchKLines(BybitProductCategory category, string ticker, Resolution resolution, int limit,
         long? start = null, long? end = null)
     {
         var parameters = new Dictionary<string, string>
         {
-            { "symbol", symbol },
+            { "symbol", ticker },
             { "interval", GetIntervalString(resolution) },
             { "limit", limit.ToStringInvariant() }
         };
@@ -138,38 +138,38 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
     /// Query for the latest price snapshot, best bid/ask price, and trading volume in the last 24 hours.
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to query for</param>
+    /// <param name="ticker">The ticker to query for</param>
     /// <returns>The current ticker information</returns>
-    public BybitTicker GetTicker(BybitProductCategory category, string symbol)
+    public BybitTicker GetTicker(BybitProductCategory category, string ticker)
     {
-        return GetTickers(category, symbol)[0];
+        return GetTickers(category, ticker)[0];
     }
 
     /// <summary>
     /// Query for the latest price snapshot, best bid/ask price, and trading volume in the last 24 hours.
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to query for</param>
+    /// <param name="ticker">The ticker to query for</param>
     /// <returns>The current ticker information</returns>
-    public BybitTicker[] GetTickers(BybitProductCategory category, string symbol = null)
+    public BybitTicker[] GetTickers(BybitProductCategory category, string ticker = null)
     {
         var parameters =
-            symbol == null ? null : new KeyValuePair<string, string>[] { new("symbol", symbol) };
+            ticker == null ? null : new KeyValuePair<string, string>[] { new("symbol", ticker) };
 
         return ExecuteGetRequest<BybitPageResult<BybitTicker>>("/market/tickers", category, parameters).List;
     }
 
     /// <summary>
-    /// Get the open interest for the provided symbol
+    /// Get the open interest for the provided ticker
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to query for</param>
+    /// <param name="ticker">The ticker to query for</param>
     /// <param name="resolution">The desired resolution</param>
     /// <param name="from">The desired start time</param>
     /// <param name="to">The end time</param>
     /// <returns></returns>
     /// <exception cref="NotSupportedException">Data is not available for spot</exception>
-    public IEnumerable<BybitOpenInterestInfo> GetOpenInterest(BybitProductCategory category, string symbol,
+    public IEnumerable<BybitOpenInterestInfo> GetOpenInterest(BybitProductCategory category, string ticker,
         Resolution resolution, DateTime from, DateTime to)
     {
         if (category == BybitProductCategory.Spot)
@@ -186,7 +186,7 @@ public class BybitMarketApiEndpoint : BybitApiEndpoint
 
         var parameters = new Dictionary<string, string>
         {
-            { "symbol", symbol },
+            { "symbol", ticker },
             { "intervalTime", GetOpenInterestIntervalString(resolution) },
             { "limit", maxKLinesPerRequest.ToStringInvariant() }
         };

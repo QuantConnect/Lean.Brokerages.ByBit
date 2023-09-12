@@ -47,16 +47,16 @@ public class BybitHistoryApi
     /// Downloads historical tick data from Bybit
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to fetch the history for</param>
+    /// <param name="ticker">The ticker to fetch the history for</param>
     /// <param name="from">The start time</param>
     /// <param name="to">The end time</param>
     /// <returns>An IEnumerable containing the ticks in the requested range</returns>
-    public IEnumerable<BybitTickUpdate> Download(BybitProductCategory category, string symbol, DateTime from,
+    public IEnumerable<BybitTickUpdate> Download(BybitProductCategory category, string ticker, DateTime from,
         DateTime to)
     {
         for (var i = from.Date; i <= to.Date; i = i.AddDays(1))
         {
-            var res = Download(symbol, category, i);
+            var res = Download(ticker, category, i);
             foreach (var tick in res)
             {
                 if (tick.Time < from) continue;
@@ -65,19 +65,15 @@ public class BybitHistoryApi
             }
         }
     }
-
-    // todo symbol <> ticker rename
-    // unit test vpo
-    
     
     /// <summary>
     /// Downloads historical tick data from Bybit for the specified date
     /// </summary>
     /// <param name="category">The product category</param>
-    /// <param name="symbol">The symbol to fetch the history for</param>
+    /// <param name="ticker">The ticker to fetch the history for</param>
     /// <param name="date">The requested date</param>
     /// <returns>An IEnumerable containing the ticks from the requested date</returns>
-    private IEnumerable<BybitTickUpdate> Download(string symbol, BybitProductCategory category, DateTime date)
+    private IEnumerable<BybitTickUpdate> Download(string ticker, BybitProductCategory category, DateTime date)
     {
         if (category is not (BybitProductCategory.Inverse or BybitProductCategory.Linear or BybitProductCategory.Spot))
         {
@@ -86,7 +82,7 @@ public class BybitHistoryApi
 
         var categoryPath = category == BybitProductCategory.Spot ? "spot" : "trading";
         var dateSeparator = category == BybitProductCategory.Spot ? "_" : string.Empty;
-        var endpoint = $"/{categoryPath}/{symbol}/{symbol}{dateSeparator}{date:yyyy-MM-dd}.csv.gz";
+        var endpoint = $"/{categoryPath}/{ticker}/{ticker}{dateSeparator}{date:yyyy-MM-dd}.csv.gz";
 
 
         using var memoryStream = new MemoryStream();
@@ -102,7 +98,7 @@ public class BybitHistoryApi
         {
             if (category == BybitProductCategory.Spot)
             {
-                yield return ParseSpotTick(line, symbol);
+                yield return ParseSpotTick(line, ticker);
             }
             else if (category is BybitProductCategory.Inverse or BybitProductCategory.Linear)
             {
@@ -135,7 +131,7 @@ public class BybitHistoryApi
         }
     }
 
-    private static BybitTickUpdate ParseSpotTick(string line, string symbol)
+    private static BybitTickUpdate ParseSpotTick(string line, string ticker)
     {
         var tick = new BybitTickUpdate();
         var split = line.Split(',');
@@ -143,7 +139,7 @@ public class BybitHistoryApi
         tick.Price = decimal.Parse(split[2], CultureInfo.InvariantCulture);
         tick.Value = decimal.Parse(split[3], CultureInfo.InvariantCulture);
         tick.Side = Enum.Parse<OrderSide>(split[4], true);
-        tick.Symbol = symbol;
+        tick.Symbol = ticker;
         return tick;
     }
 
