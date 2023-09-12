@@ -14,15 +14,15 @@
 */
 
 using System;
-using QuantConnect.ToolBox;
 using System.Collections.Generic;
 using System.Linq;
 using QuantConnect.BybitBrokerage.Api;
 using QuantConnect.BybitBrokerage.Models;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
+using QuantConnect.ToolBox;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.BybitBrokerage.ToolBox
 {
     /// <summary>
     /// Template Brokerage implementation of <see cref="IExchangeInfoDownloader"/>

@@ -8,8 +8,8 @@
         <Copyright>Copyright ©  2021</Copyright>
         <OutputPath>..\..\Lean\Launcher\bin\$(Configuration)\</OutputPath>
         <Product>QuantConnect.BybitBrokerage.ToolBox</Product>
-        <RootNamespace>QuantConnect.TemplateBrokerage.ToolBox</RootNamespace>
-        <AssemblyTitle>QuantConnect.TemplateBrokerage.ToolBox</AssemblyTitle>
+        <RootNamespace>QuantConnect.BybitBrokerage.ToolBox</RootNamespace>
+        <AssemblyTitle>QuantConnect.BybitBrokerage.ToolBox</AssemblyTitle>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

@@ -14,19 +14,18 @@
 */
 
 using System;
-using QuantConnect.Data;
 using System.Collections.Generic;
 using System.Linq;
 using NodaTime;
 using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage;
 using QuantConnect.Configuration;
+using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.BybitBrokerage.ToolBox
 {
     /// <summary>
     /// Template Brokerage Data Downloader implementation
@@ -55,7 +54,7 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
 
         protected virtual Brokerage CreateBrokerage(string apiUrl)
         {
-            return new BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null, 0);
+            return new QuantConnect.BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null, 0);
         }
 
         /// <summary>
