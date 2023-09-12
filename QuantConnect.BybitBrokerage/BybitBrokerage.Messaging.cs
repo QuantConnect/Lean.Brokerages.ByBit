@@ -491,7 +491,6 @@ public partial class BybitBrokerage
         // When connect is called from the api client factory the ApiClient instance property is not set yet
         api ??= ApiClient;
 
-        //todo maybe there is a better place to validate this
         if (!IsAccountMarginStatusValid(api, out var message))
         {
             OnMessage(message);

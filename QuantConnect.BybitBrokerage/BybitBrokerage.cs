@@ -33,7 +33,6 @@ namespace QuantConnect.BybitBrokerage;
 
 /// <summary>
 /// Bybit brokerage implementation
-/// todo: margin, oi funding
 /// </summary>
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
@@ -236,7 +235,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         OrderProvider = orderProvider;
         MarketName = marketName;
 
-        //todo validate
         var weights = new Dictionary<Symbol, int>();
         using (var tempClient = GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel))
         {

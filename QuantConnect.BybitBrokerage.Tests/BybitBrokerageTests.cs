@@ -50,12 +50,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
         protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
 
-        [SetUp]
-        public void Setup()
-        {
-            //todo:  Market Buy orders on spot need to be send in the quote currency should we move that responsibility to the user
-            //todo: Spot market orders are often only partially filled and then canceled, how to handle this properly? - might be fixed
-        }
+        
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {

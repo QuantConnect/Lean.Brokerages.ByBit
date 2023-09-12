@@ -199,6 +199,7 @@ public partial class BybitBrokerage
             
             ApiClient.Trade.CancelOrder(Category, order);
             
+            //todo probably not needed
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero) { Status = OrderStatus.CancelPending });
             canceled = true;
         });

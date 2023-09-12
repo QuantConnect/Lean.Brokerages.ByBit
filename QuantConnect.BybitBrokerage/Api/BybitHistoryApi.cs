@@ -66,6 +66,10 @@ public class BybitHistoryApi
         }
     }
 
+    // todo symbol <> ticker rename
+    // unit test vpo
+    
+    
     /// <summary>
     /// Downloads historical tick data from Bybit for the specified date
     /// </summary>
@@ -149,11 +153,11 @@ public class BybitHistoryApi
         try
         {
             var split = line.Split(',');
-            tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0]));
+            tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0], CultureInfo.InvariantCulture));
             tick.Symbol = split[1];
             tick.Side = (OrderSide)Enum.Parse(typeof(OrderSide), split[2]);
             tick.Value = decimal.Parse(split[3], NumberStyles.Float, CultureInfo.InvariantCulture);
-            tick.Price = decimal.Parse(split[4], CultureInfo.InvariantCulture);
+            tick.Price = decimal.Parse(split[4], CultureInfo.InvariantCulture); //todo value/price
             tick.TickType = (TickDirection)Enum.Parse(typeof(TickDirection), split[5]);
             tick.Id = split[6];
             //tick.GrossValue = decimal.Parse(split[7], CultureInfo.InvariantCulture);
