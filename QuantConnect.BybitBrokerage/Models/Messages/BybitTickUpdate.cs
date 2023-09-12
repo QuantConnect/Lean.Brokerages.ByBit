@@ -22,7 +22,6 @@ namespace QuantConnect.BybitBrokerage.Models.Messages;
 
 
 /// <summary>
-/// Todo rename
 /// Tick update
 /// </summary>
 public class BybitTickUpdate

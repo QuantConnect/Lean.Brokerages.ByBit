@@ -382,6 +382,13 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
     private IEnumerable<OpenInterest> GetOpenInterestHistory(string brokerageSymbol, HistoryRequest request)
     {
+        if (request.Resolution is not (Resolution.Hour or Resolution.Daily))
+        {
+            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
+                $"Only hourly and daily resolutions are supported for open interest history. No history returned"));
+            yield break;
+        }
+        
         var client = ApiClient ?? GetApiClient(_symbolMapper, null,
             Config.Get("bybit-api-url", "https://api.bybit.com"), null, null, BybitVIPLevel.VIP0);
         var oiHistory = client.Market

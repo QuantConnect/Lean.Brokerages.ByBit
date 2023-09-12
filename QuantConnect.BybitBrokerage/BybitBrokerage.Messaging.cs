@@ -117,7 +117,7 @@ public partial class BybitBrokerage
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(tradeUpdate.OrderId).FirstOrDefault();
             if (leanOrder == null) continue;
 
-            // We are only interested in actual order executions, other types like liquidations are not needed. Todo is this true?
+            // We are only interested in actual order executions, other types like liquidations are not needed. Todo what does lean need in case of liquidations?
             if (tradeUpdate.ExecutionType is not ExecutionType.Trade)
             {
                 continue;

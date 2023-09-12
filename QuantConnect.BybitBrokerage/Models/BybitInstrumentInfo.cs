@@ -76,7 +76,7 @@ public class BybitInstrumentInfo
     /// <summary>
     /// Price scale 
     /// </summary>
-    public string PriceScale { get; set; } //todo
+    public string PriceScale { get; set; }
 
     /// <summary>
     /// Price attributes

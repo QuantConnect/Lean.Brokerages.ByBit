@@ -72,7 +72,7 @@ namespace QuantConnect.BybitBrokerage.ToolBox
             var tickType = dataDownloaderGetParameters.TickType;
 
 
-            if (tickType != TickType.Trade)
+            if (tickType is not (TickType.Trade or TickType.OpenInterest))
             {
                 return Enumerable.Empty<BaseData>();
             }
@@ -86,7 +86,7 @@ namespace QuantConnect.BybitBrokerage.ToolBox
             var historyRequest = new HistoryRequest(
                 startUtc,
                 endUtc,
-                resolution == Resolution.Tick ? typeof(Tick) : typeof(TradeBar),
+                resolution == Resolution.Tick ? typeof(Tick) : tickType == TickType.Trade ? typeof(TradeBar) : typeof(OpenInterest),
                 symbol,
                 resolution,
                 SecurityExchangeHours.AlwaysOpen(DateTimeZone.Utc),
@@ -113,49 +113,54 @@ namespace QuantConnect.BybitBrokerage.ToolBox
         }
 
         public static void DownloadHistory(List<string> tickers, string resolution, string securityType,
-            DateTime fromDate, DateTime toDate, string market = Market.Bybit)
+            DateTime fromDate, DateTime toDate, string tickType, string market = Market.Bybit)
         {
-            //todo open interest in toolbox?
             if (resolution.IsNullOrEmpty() || tickers.IsNullOrEmpty())
             {
                 Console.WriteLine("ByBitHistoryDownloader ERROR: '--tickers=' or '--resolution=' parameter is missing");
                 Console.WriteLine("--tickers=eg BTCUSD");
                 Console.WriteLine("--resolution=Minute/Hour/Daily/All");
+                Console.WriteLine("optional: --security-type=Crypto/CryptoFuture");
+                Console.WriteLine("optional: --tick-type=Trade,OpenInterest");
                 Environment.Exit(1);
             }
 
-            if (!Enum.TryParse<SecurityType>(securityType, true, out var sec))
+            if (!Enum.TryParse<SecurityType>(securityType, true, out var securityTypeEnum))
             {
-                sec = SecurityType.Crypto;
+                securityTypeEnum = SecurityType.Crypto;
+            }
+
+            if (!Enum.TryParse<TickType>(tickType, true, out var tickTypeEnum))
+            {
+                tickTypeEnum = TickType.Trade;
             }
             
             try
             {
                 var allResolutions = resolution.Equals("all", StringComparison.OrdinalIgnoreCase);
                 var castResolution = allResolutions
-                    ? Resolution.Minute
+                    ? tickTypeEnum == TickType.Trade ? Resolution.Minute : Resolution.Hour
                     : (Resolution)Enum.Parse(typeof(Resolution), resolution);
 
                 //Load settings from config.json
                 var dataDirectory = Config.Get("data-folder", Globals.DataFolder);
 
-                var downloader =  CreateDownloader(sec,market);
+                var downloader =  CreateDownloader(securityTypeEnum,market);
 
                 foreach (var ticker in tickers)
                 {
                     // Download the data
                     var symbol = downloader.GetSymbol(ticker);
-                    var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate,
-                        toDate, tickType: TickType.Trade));
+                    var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate, tickType: tickTypeEnum));
 
 
-
+                    // todo how to write open interest data
                     // Save the data (single resolution)
                     var writer = new LeanDataWriter(castResolution, symbol, dataDirectory);
                     writer.Write(data);
 
 
-                    if (allResolutions && castResolution != Resolution.Tick)
+                    if (tickTypeEnum == TickType.Trade && allResolutions && castResolution != Resolution.Tick)
                     {
                         var bars = data.Cast<TradeBar>();
                         // Save the data (other resolutions)

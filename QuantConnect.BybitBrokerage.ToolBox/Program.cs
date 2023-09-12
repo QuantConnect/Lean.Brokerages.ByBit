@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
 using static QuantConnect.Configuration.ApplicationParser;
@@ -42,11 +43,14 @@ namespace QuantConnect.BybitBrokerage.ToolBox
                 var resolution = optionsObject.ContainsKey("resolution") ? optionsObject["resolution"].ToString() : "";
                 var securityType = optionsObject.ContainsKey("security-type") ? optionsObject["security-type"].ToString() : "";
                 var tickers = ToolboxArgumentParser.GetTickers(optionsObject);
+                
+                // Todo: Unhandled exception. McMaster.Extensions.CommandLineUtils.UnrecognizedCommandParsingException: Unrecognized option '--tick-type'
+                var tickType = TickType.OpenInterest.ToStringInvariant(); //optionsObject.GetValueOrDefault("tick-type", "Trade").ToString();
                 var toDate = optionsObject.ContainsKey("to-date")
                     ? Parse.DateTimeExact(optionsObject["to-date"].ToString(), "yyyyMMdd-HH:mm:ss")
                     : DateTime.UtcNow;
                 
-                BybitBrokerageDownloader.DownloadHistory(tickers, resolution, securityType, fromDate, toDate, Market.Bybit);
+                BybitBrokerageDownloader.DownloadHistory(tickers, resolution, securityType, fromDate, toDate, tickType,Market.Bybit);
             }
             else if (targetAppName.Contains("updater") || targetAppName.EndsWith("spu"))
             {
