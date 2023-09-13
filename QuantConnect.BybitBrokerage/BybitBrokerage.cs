@@ -37,6 +37,9 @@ namespace QuantConnect.BybitBrokerage;
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 {
+    private static int MaxSymbolsPerWebsocketConnection => Config.GetInt("bybit-maximum-websocket-connections",128);
+    private static int MaxWebsocketConnections => Config.GetInt("bybit-maximum-symbols-per-connection",16);
+    
     private int _orderBookDepth;
 
     private IAlgorithm _algorithm;
@@ -46,6 +49,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private Lazy<BybitApi> _apiClientLazy;
 
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
+    
+    
 
     /// <summary>
     /// Brokerage market name
@@ -66,6 +71,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// Account category
     /// </summary>
     protected virtual BybitProductCategory Category => BybitProductCategory.Spot;
+
+   
 
     /// <summary>
     /// Returns true if we're currently connected to the broker
@@ -260,8 +267,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         }
         
         var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(publicWssUrl,
-            16,
-            128,
+            MaxSymbolsPerWebsocketConnection,
+            MaxWebsocketConnections,
             weights,
             () => new BybitWebSocketWrapper(),
             Subscribe,
