@@ -44,11 +44,11 @@ public class BybitTickUpdate
     [JsonProperty("S")] public OrderSide Side { get; set; }
 
     /// <summary>
-    /// Order value
+    /// Order value (quantity)
     /// </summary>
     [JsonProperty("v")]
     [JsonConverter(typeof(BybitDecimalStringConverter))]
-    public decimal Value { get; set; }
+    public decimal Quantity { get; set; }
 
     /// <summary>
     /// Order price

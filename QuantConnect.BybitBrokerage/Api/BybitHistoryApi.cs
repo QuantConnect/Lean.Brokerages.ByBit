@@ -137,7 +137,7 @@ public class BybitHistoryApi
         var split = line.Split(',');
         tick.Time = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(split[1])).UtcDateTime;
         tick.Price = decimal.Parse(split[2], CultureInfo.InvariantCulture);
-        tick.Value = decimal.Parse(split[3], CultureInfo.InvariantCulture);
+        tick.Quantity = decimal.Parse(split[3], CultureInfo.InvariantCulture);
         tick.Side = Enum.Parse<OrderSide>(split[4], true);
         tick.Symbol = ticker;
         return tick;
@@ -152,7 +152,7 @@ public class BybitHistoryApi
             tick.Time = BybitCandleTimeConverter.Convert(decimal.Parse(split[0], CultureInfo.InvariantCulture));
             tick.Symbol = split[1];
             tick.Side = (OrderSide)Enum.Parse(typeof(OrderSide), split[2]);
-            tick.Value = decimal.Parse(split[3], NumberStyles.Float, CultureInfo.InvariantCulture);
+            tick.Quantity = decimal.Parse(split[3], NumberStyles.Float, CultureInfo.InvariantCulture);
             tick.Price = decimal.Parse(split[4], CultureInfo.InvariantCulture);
             tick.TickType = (TickDirection)Enum.Parse(typeof(TickDirection), split[5]);
             tick.Id = split[6];

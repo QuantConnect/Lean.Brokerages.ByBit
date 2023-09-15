@@ -357,8 +357,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         foreach (var tick in res)
         {
             yield return
-                new Tick(tick.Time, request.Symbol, string.Empty, MarketName,
-                    tick.Value * (tick.Side == OrderSide.Buy ? 1m : -1m), tick.Price);
+                new Tick(tick.Time, request.Symbol, string.Empty, MarketName, tick.Quantity, tick.Price);
         }
     }
 

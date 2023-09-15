@@ -261,7 +261,7 @@ public partial class BybitBrokerage
         {
             // var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
             EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
-                trade.Price, trade.Value);
+                trade.Price, trade.Quantity);
         }
     }
 
