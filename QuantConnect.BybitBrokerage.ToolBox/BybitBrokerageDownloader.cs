@@ -54,7 +54,7 @@ namespace QuantConnect.BybitBrokerage.ToolBox
 
         protected virtual Brokerage CreateBrokerage(string apiUrl)
         {
-            return new QuantConnect.BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null, 0);
+            return new QuantConnect.BybitBrokerage.BybitBrokerage(string.Empty, string.Empty, apiUrl, string.Empty, null, null, null);
         }
 
         /// <summary>

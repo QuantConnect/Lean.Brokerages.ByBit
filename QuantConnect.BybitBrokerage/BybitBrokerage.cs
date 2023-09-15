@@ -40,8 +40,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private static int MaxSymbolsPerWebsocketConnection => Config.GetInt("bybit-maximum-websocket-connections",128);
     private static int MaxWebsocketConnections => Config.GetInt("bybit-maximum-symbols-per-connection",16);
     
-    private int _orderBookDepth;
-
     private IAlgorithm _algorithm;
     private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
     private LiveNodePacket _job;
@@ -104,35 +102,32 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
     /// <param name="aggregator">the aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
-    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job,
-        int orderBookDepth,
         BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, algorithm?.Portfolio?.Transactions,
-            algorithm?.Portfolio, aggregator, job, Market.Bybit, orderBookDepth, vipLevel)
+            algorithm?.Portfolio, aggregator, job, Market.Bybit, vipLevel)
     {
     }
 
     /// <summary>
     /// Constructor for brokerage
     /// </summary>
-    /// <param name="webSocketBaseUrl">The web socket base url</param>
-    /// <param name="restApiUrl">The rest api url</param>
     /// <param name="apiKey">The api key</param>
     /// <param name="apiSecret">The api secret</param>
+    /// <param name="restApiUrl">The rest api url</param>
+    /// <param name="webSocketBaseUrl">The web socket base url</param>
     /// <param name="algorithm">The algorithm instance is required to retrieve account type</param>
     /// <param name="orderProvider">The order provider is required to retrieve orders</param>
     /// <param name="securityProvider">The security provider is required</param>
     /// <param name="aggregator">The aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Market name</param>
-    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-        IDataAggregator aggregator, LiveNodePacket job, string marketName, int orderBookDepth,
+        IDataAggregator aggregator, LiveNodePacket job, string marketName,
         BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
         : base(marketName)
     {
@@ -147,7 +142,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             aggregator,
             job,
             marketName,
-            orderBookDepth,
             vipLevel
         );
     }
@@ -216,12 +210,11 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <param name="aggregator">The aggregator for consolidating ticks</param>
     /// <param name="job">The live job packet</param>
     /// <param name="marketName">Market name</param>
-    /// <param name="orderBookDepth">The requested order book depth</param>
     /// <param name="vipLevel">Bybit VIP level</param>
     private void Initialize(string baseWssUrl, string restApiUrl, string apiKey, string apiSecret,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
         IDataAggregator aggregator, LiveNodePacket job,
-        string marketName, int orderBookDepth, BybitVIPLevel vipLevel)
+        string marketName, BybitVIPLevel vipLevel)
     {
         if (IsInitialized)
         {
@@ -236,7 +229,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _job = job;
         _algorithm = algorithm;
         _aggregator = aggregator;
-        _orderBookDepth = orderBookDepth;
         _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
         _symbolMapper = new(marketName);
         OrderProvider = orderProvider;

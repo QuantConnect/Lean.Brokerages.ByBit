@@ -150,7 +150,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionPrice,
                 tradeUpdate.ExecutionQuantity,
                 fee);
-            
+
             OnOrderEvent(orderEvent);
         }
 
@@ -191,7 +191,7 @@ public partial class BybitBrokerage
             OnOrderEvent(orderEvent);
         }
     }
-    
+
 
     /// <summary>
     /// Processes WSS messages from the public market data streams
@@ -260,7 +260,8 @@ public partial class BybitBrokerage
         foreach (var trade in trades.Data)
         {
             // var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time, trade.Price, trade.Value);
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
+                trade.Price, trade.Value);
         }
     }
 
@@ -421,15 +422,6 @@ public partial class BybitBrokerage
     /// <param name="symbol">The symbol to subscribe</param>
     private bool Subscribe(IWebSocket webSocket, Symbol symbol)
     {
-        var depthString = _orderBookDepth.ToStringInvariant();
-        if (!IsOrderBookDepthSupported(Category, _orderBookDepth))
-        {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
-                $"Configured order book depth of '{depthString}' is not supported by {Category.ToStringInvariant()}"));
-            return false;
-        }
-
-
         Send(webSocket,
             new
             {
@@ -461,7 +453,7 @@ public partial class BybitBrokerage
     private List<string> GetTopics(Symbol symbol)
     {
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-        var depthString = _orderBookDepth.ToStringInvariant();
+        var depthString = GetDefaultOrderBookDepth(Category);
 
         var topics = new List<string>
         {
@@ -474,7 +466,7 @@ public partial class BybitBrokerage
         {
             topics.Add($"tickers.{brokerageSymbol}");
         }
-        
+
         return topics;
     }
 
@@ -543,38 +535,16 @@ public partial class BybitBrokerage
         Send(WebSocket, api.AuthenticateWebSocket(authValidFor));
     }
 
-    private static bool IsOrderBookDepthSupported(BybitProductCategory category, int depth)
+    private static string GetDefaultOrderBookDepth(BybitProductCategory category)
     {
-        /*
-           Order book push frequencies
-           
-           Linear & inverse:
-           Level 1 data, push frequency: 10ms
-           Level 50 data, push frequency: 20ms
-           Level 200 data, push frequency: 100ms
-           Level 500 data, push frequency: 100ms
-
-           Spot:
-           Level 1 data, push frequency: 10ms
-           Level 50 data, push frequency: 20ms
-
-           Option:
-           Level 25 data, push frequency: 20ms
-           Level 100 data, push frequency: 100ms
-        */
-        
-        switch (category)
+        return category switch
         {
-            case BybitProductCategory.Spot:
-                return Array.IndexOf(new[] { 1, 50 }, depth) >= 0;
-            case BybitProductCategory.Linear:
-            case BybitProductCategory.Inverse:
-                return Array.IndexOf(new[] { 1, 50, 200, 500 }, depth) >= 0;
-            case BybitProductCategory.Option:
-                return Array.IndexOf(new[] { 25, 100 }, depth) >= 0;
-            default:
-                return false;
-        }
+            BybitProductCategory.Inverse => "1",
+            BybitProductCategory.Linear => "1",
+            BybitProductCategory.Spot => "1",
+            BybitProductCategory.Option => "25",
+            _ => throw new ArgumentOutOfRangeException(nameof(category), category, null)
+        };
     }
 
     private static bool IsAccountMarginStatusValid(BybitApi api, out BrokerageMessageEvent message)

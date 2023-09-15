@@ -31,7 +31,7 @@ public partial class BybitFuturesBrokerageTests : BrokerageTests
 
         _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
         return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
-            securityProvider, new AggregationManager(), null, 50);
+            securityProvider, new AggregationManager(), null);
     }
 
     protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)

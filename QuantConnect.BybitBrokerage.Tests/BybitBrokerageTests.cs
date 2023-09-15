@@ -63,7 +63,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
             return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
-                securityProvider, new AggregationManager(), null, Market.Bybit, 50);
+                securityProvider, new AggregationManager(), null, Market.Bybit);
         }
 
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)

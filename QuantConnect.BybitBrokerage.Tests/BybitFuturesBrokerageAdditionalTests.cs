@@ -29,7 +29,7 @@ namespace QuantConnect.BybitBrokerage.Tests
             string apiUrl, string websocketUrl)
         {
             return new BybitFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm,
-                new AggregationManager(), null, 50);
+                new AggregationManager(), null);
         }
     }
 }

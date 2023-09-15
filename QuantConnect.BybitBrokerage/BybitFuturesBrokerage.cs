@@ -60,13 +60,12 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="securityProvider">The security provider is required</param>
         /// <param name="aggregator">The aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
-        /// <param name="orderBookDepth">The requested order book depth</param>
         /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
             IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
-            IDataAggregator aggregator, LiveNodePacket job, int orderBookDepth,
+            IDataAggregator aggregator, LiveNodePacket job,
             BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit, orderBookDepth,
+            webSocketBaseUrl, algorithm, orderProvider, securityProvider, aggregator, job, Market.Bybit,
             vipLevel)
         {
         }
@@ -81,12 +80,11 @@ namespace QuantConnect.BybitBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
-        /// <param name="orderBookDepth">The requested order book depth</param>
         /// <param name="vipLevel">Bybit VIP level</param>
         public BybitFuturesBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
-            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, int orderBookDepth,
+            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job,
             BybitVIPLevel vipLevel = BybitVIPLevel.VIP0) : base(apiKey, apiSecret, restApiUrl,
-            webSocketBaseUrl, algorithm, aggregator, job, orderBookDepth, vipLevel)
+            webSocketBaseUrl, algorithm, aggregator, job, vipLevel)
         {
         }
 

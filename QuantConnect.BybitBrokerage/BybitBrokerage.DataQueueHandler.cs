@@ -95,7 +95,6 @@ public partial class BybitBrokerage
             aggregator,
             job,
             Market.Bybit,
-            int.Parse(job.BrokerageData[GetOrderBookDepthConfigName()]),
             vipLevel
         );
     }
