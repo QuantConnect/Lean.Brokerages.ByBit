@@ -41,30 +41,43 @@ namespace QuantConnect.BybitBrokerage.ToolBox
         public IEnumerable<string> Get()
         {
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
-            using var client = new BybitApi(null, null,null, null, apiUrl);
+            using var client = new BybitApi(null, null, null, null, apiUrl);
 
-            var linear = (SecurityType:SecurityType.CryptoFuture, InstrumentInfos:client.Market.GetInstrumentInfo(BybitProductCategory.Linear));
-            var inverse = (SecurityType:SecurityType.CryptoFuture,InstrumentInfos: client.Market.GetInstrumentInfo(BybitProductCategory.Inverse));
-            var spot = (SecurityType:SecurityType.Crypto,InstrumentInfos : client.Market.GetInstrumentInfo(BybitProductCategory.Spot));
-            
-            var symbols = new[] { linear,inverse, spot }
-                    .SelectMany(result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));            
-         
-                foreach (var symbol in symbols)
+            var linear = (SecurityType: SecurityType.CryptoFuture,
+                InstrumentInfos: client.Market.GetInstrumentInfo(BybitProductCategory.Linear));
+            var inverse = (SecurityType: SecurityType.CryptoFuture,
+                InstrumentInfos: client.Market.GetInstrumentInfo(BybitProductCategory.Inverse));
+            var spot = (SecurityType: SecurityType.Crypto,
+                InstrumentInfos: client.Market.GetInstrumentInfo(BybitProductCategory.Spot));
+
+            var symbols = new[] { linear, inverse, spot }
+                .SelectMany(
+                    result => result.InstrumentInfos.Select(info => (result.SecurityType, InstrumentInfo: info)));
+
+            foreach (var symbol in symbols)
+            {
+                if (!symbol.InstrumentInfo.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (!symbol.InstrumentInfo.Status.Equals("trading", StringComparison.InvariantCultureIgnoreCase)) continue;
-                    yield return GetInstrumentInfoString(symbol.InstrumentInfo, symbol.SecurityType);
+                    continue;
                 }
+
+                if (symbol.InstrumentInfo.SettleCoin == "USDC")
+                {
+                    // Skip USDC perp and future contracts for now, they'll need some more implementation
+                    continue;
+                }
+                yield return GetInstrumentInfoString(symbol.InstrumentInfo, symbol.SecurityType);
+            }
         }
 
 
         private string GetInstrumentInfoString(BybitInstrumentInfo info, SecurityType securityType)
         {
             var securityTypeStr = securityType.ToStringInvariant().ToLowerInvariant();
-            
+
             // Remove multiplier prefix from symbols like 10000LADYSUSDT. Not 1 as there is also 1INCHUSDT 
-            var symbolName = info.Symbol.StartsWith("10") ? info.Symbol.TrimStart('0','1') : info.Symbol; 
-            
+            var symbolName = info.Symbol.StartsWith("10") ? info.Symbol.TrimStart('0', '1') : info.Symbol;
+
             // market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier
             return
                 $"{Market.ToLowerInvariant()},{symbolName},{securityTypeStr},{info.Symbol},{info.QuoteCoin},1,{info.PriceFilter.TickSize},{info.LotSizeFilter.QuantityStep ?? info.LotSizeFilter.BasePrecision},{info.Symbol},{info.LotSizeFilter.MinOrderQuantity}";
