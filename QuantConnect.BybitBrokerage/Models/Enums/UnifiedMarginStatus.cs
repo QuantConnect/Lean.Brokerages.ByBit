@@ -25,20 +25,20 @@ public enum AccountUnifiedMarginStatus
     /// <summary>
     /// Regular account
     /// </summary>
-    [EnumMember(Value = "1")] Regular,
+    [EnumMember(Value = "1")] Regular = 1,
 
     /// <summary>
     /// Unified margin account, it only trades linear perpetual and options.
     /// </summary>
-    [EnumMember(Value = "2")] UnifiedMargin,
+    [EnumMember(Value = "2")] UnifiedMargin = 2,
 
     /// <summary>
     /// Unified trade account, it can trade linear perpetual, options and spot
     /// </summary>
-    [EnumMember(Value = "3")] UnifiedTrade,
+    [EnumMember(Value = "3")] UnifiedTrade = 3,
 
     /// <summary>
     /// UTA Pro, the pro version of Unified trade account
     /// </summary>
-    [EnumMember(Value = "4")] UTAPro,
+    [EnumMember(Value = "4")] UTAPro = 4,
 }

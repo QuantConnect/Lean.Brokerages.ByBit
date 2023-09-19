@@ -1,5 +1,12 @@
 {
-  "data-folder": "../../../../Lean/Data/",
-  "bybit-api-url": "https://api-testnet.bybit.com", 
-  "bybit-websocket-url": "wss://stream-testnet.bybit.com"
+    "bybit-api-key": "",
+    "bybit-api-secret": "",
+
+    "data-folder": "../../../../Lean/Data/",
+    "bybit-api-url": "https://api-testnet.bybit.com",
+    "bybit-websocket-url": "wss://stream-testnet.bybit.com",
+
+    "job-user-id": "0",
+    "api-access-token": "",
+    "job-organization-id": ""
 }

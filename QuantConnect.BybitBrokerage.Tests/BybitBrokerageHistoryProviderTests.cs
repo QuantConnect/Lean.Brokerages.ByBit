@@ -182,6 +182,12 @@ namespace QuantConnect.BybitBrokerage.Tests
                     var timesArray = historyArray.Select(x => x.Time).ToArray();
                     Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
 
+                    foreach (var slice in historyArray)
+                    {
+                        var data = slice.AllData[0];
+                        Assert.AreEqual(symbol, data.Symbol);
+                        Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
+                    }
 
                     // No missing bars
                     if (resolution != Resolution.Tick && historyProvider.DataPointCount >= 2)

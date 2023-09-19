@@ -65,7 +65,11 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
         {
             return dec;
         }
-        
+        if (val is double d)
+        {
+            return d.SafeDecimalCast();
+        }
+
         if (val is string str && decimal.TryParse(str, NumberStyles.Currency, CultureInfo.InvariantCulture, out var res))
         {
             return res;

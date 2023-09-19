@@ -39,6 +39,8 @@ namespace QuantConnect.BybitBrokerage;
 
 public partial class BybitBrokerage
 {
+    private readonly ConcurrentDictionary<int, decimal> _remainingFillQuantity = new();
+
     private class StreamAuthenticatedEventArgs : EventArgs
     {
         public string Message { get; init; }
@@ -123,12 +125,23 @@ public partial class BybitBrokerage
                 continue;
             }
 
+
             var symbol = tradeUpdate.Symbol;
             var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSupportedSecurityType(), MarketName);
-            var status = tradeUpdate.QuantityRemaining.GetValueOrDefault(0) == 0
-                ? QuantConnect.Orders.OrderStatus.Filled
-                : QuantConnect.Orders.OrderStatus.PartiallyFilled;
+            var filledQuantity = Math.Abs(tradeUpdate.ExecutionQuantity);
 
+            _remainingFillQuantity.TryGetValue(leanOrder.Id, out var accumulatedFilledQuantity);
+            var status = Orders.OrderStatus.PartiallyFilled;
+            // TODO: double check fees can't be taken from the fill quantity causing us to never set filled status
+            if (accumulatedFilledQuantity + filledQuantity == leanOrder.AbsoluteQuantity)
+            {
+                status = Orders.OrderStatus.Filled;
+                _remainingFillQuantity.Remove(leanOrder.Id, out var _);
+            }
+            else
+            {
+                _remainingFillQuantity[leanOrder.Id] = filledQuantity + accumulatedFilledQuantity;
+            }
             var fee = OrderFee.Zero;
             if (tradeUpdate.ExecutionFee != 0)
             {
@@ -137,7 +150,7 @@ public partial class BybitBrokerage
                     BybitProductCategory.Linear => "USDT",
                     BybitProductCategory.Inverse => GetBaseCurrency(symbol),
                     BybitProductCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
-                    _ => throw new NotSupportedException($"category {Category.ToString()} not implemented")
+                    _ => throw new NotSupportedException($"category {Category} not implemented")
                 };
                 fee = new OrderFee(new CashAmount(tradeUpdate.ExecutionFee, currency));
             }
@@ -148,7 +161,7 @@ public partial class BybitBrokerage
                 tradeUpdate.ExecutionTime, status,
                 tradeUpdate.Side == OrderSide.Buy ? OrderDirection.Buy : OrderDirection.Sell,
                 tradeUpdate.ExecutionPrice,
-                tradeUpdate.ExecutionQuantity,
+                filledQuantity * Math.Sign(leanOrder.Quantity),
                 fee);
 
             OnOrderEvent(orderEvent);
@@ -179,6 +192,7 @@ public partial class BybitBrokerage
         foreach (var order in orders)
         {
             //We're not interested in order executions here as HandleOrderExecution is taking care of this
+            // TODO: why do we need this method then
             if (order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
 
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(order.OrderId).FirstOrDefault();
@@ -517,8 +531,8 @@ public partial class BybitBrokerage
 
         void OnAuthenticated(object _, StreamAuthenticatedEventArgs args)
         {
-            resetEvent.Set();
             authenticated = args.IsAuthenticated;
+            resetEvent.Set();
         }
 
         Authenticated += OnAuthenticated;

@@ -51,18 +51,6 @@ public class BybitTrade
     public decimal? OrderPrice { get; set; }
 
     /// <summary>
-    /// Order quantity
-    /// </summary>
-    [JsonProperty("orderQty")]
-    public decimal? OrderQuantity { get; set; }
-
-    /// <summary>
-    /// Remaining order quantity
-    /// </summary>
-    [JsonProperty("leavesQty")]
-    public decimal? QuantityRemaining { get; set; }
-
-    /// <summary>
     /// Order type
     /// </summary>
     public OrderType? OrderType { get; set; }

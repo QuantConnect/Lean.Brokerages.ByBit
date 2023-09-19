@@ -29,8 +29,6 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             var eid = Composer.Instance.GetExportedValueByTypeName<IExchangeInfoDownloader>("BybitExchangeInfoDownloader");
             var tickers = eid.Get().ToList();
-
-            
             
             Assert.IsTrue(tickers.Any());
             foreach (var tickerLine in tickers)
