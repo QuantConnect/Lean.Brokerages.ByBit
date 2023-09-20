@@ -21,7 +21,7 @@ using System.Linq;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture]
+    [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public class BybitExchangeInfoDownloaderTests
     {
         [Test]

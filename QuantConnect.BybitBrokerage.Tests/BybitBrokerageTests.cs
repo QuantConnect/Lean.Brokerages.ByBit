@@ -34,7 +34,7 @@ using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture]
+    [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public partial class BybitBrokerageTests : BrokerageTests
     {
         protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.Crypto, "bybit");
