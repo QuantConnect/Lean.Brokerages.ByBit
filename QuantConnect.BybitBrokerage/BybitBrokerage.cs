@@ -302,7 +302,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             });
         }
 
-        //ValidateSubscription();
+        ValidateSubscription();
     }
 
     /// <summary>

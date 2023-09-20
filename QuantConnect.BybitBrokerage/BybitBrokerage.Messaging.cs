@@ -136,7 +136,7 @@ public partial class BybitBrokerage
             if (accumulatedFilledQuantity + filledQuantity == leanOrder.AbsoluteQuantity)
             {
                 status = Orders.OrderStatus.Filled;
-                _remainingFillQuantity.Remove(leanOrder.Id, out var _);
+                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
             }
             else
             {
@@ -186,13 +186,15 @@ public partial class BybitBrokerage
         }
     }
 
+    /// <summary>
+    /// This method is emitting events when orders are cancelled
+    /// </summary>
     private void HandleOrderUpdate(JToken message)
     {
         var orders = message.ToObject<BybitDataMessage<BybitOrder[]>>(JsonSerializer).Data;
         foreach (var order in orders)
         {
             //We're not interested in order executions here as HandleOrderExecution is taking care of this
-            // TODO: why do we need this method then
             if (order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
 
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(order.OrderId).FirstOrDefault();
@@ -201,6 +203,10 @@ public partial class BybitBrokerage
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
+            if (newStatus.IsClosed())
+            {
+                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
+            }
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             OnOrderEvent(orderEvent);
         }
