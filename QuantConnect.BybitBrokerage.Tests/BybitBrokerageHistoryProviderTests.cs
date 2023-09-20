@@ -28,7 +28,7 @@ using QuantConnect.Lean.Engine.HistoricalData;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture]
+    [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public class BybitBrokerageHistoryProviderTests
     {
         private static readonly Symbol ETHUSDT = Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit);
