@@ -20,7 +20,7 @@ using QuantConnect.Lean.Engine.DataFeeds;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
-    [TestFixture]
+    [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public class BybitFuturesBrokerageAdditionalTests : BybitBrokerageAdditionalTests
     {
         protected override string BrokerageName => nameof(BybitFuturesBrokerage);
