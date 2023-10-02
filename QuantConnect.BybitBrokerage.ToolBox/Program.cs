@@ -45,12 +45,12 @@ namespace QuantConnect.BybitBrokerage.ToolBox
                 var tickers = ToolboxArgumentParser.GetTickers(optionsObject);
                 
                 // Todo: Unhandled exception. McMaster.Extensions.CommandLineUtils.UnrecognizedCommandParsingException: Unrecognized option '--tick-type'
-                var tickType = TickType.OpenInterest.ToStringInvariant(); //optionsObject.GetValueOrDefault("tick-type", "Trade").ToString();
+                var tickType = TickType.Trade.ToStringInvariant(); //optionsObject.GetValueOrDefault("tick-type", "Trade").ToString();
                 var toDate = optionsObject.ContainsKey("to-date")
                     ? Parse.DateTimeExact(optionsObject["to-date"].ToString(), "yyyyMMdd-HH:mm:ss")
                     : DateTime.UtcNow;
                 
-                BybitBrokerageDownloader.DownloadHistory(tickers, resolution, securityType, fromDate, toDate, tickType,Market.Bybit);
+                BybitBrokerageDownloader.DownloadHistory(tickers, resolution, securityType, fromDate, toDate, tickType, Market.Bybit);
             }
             else if (targetAppName.Contains("updater") || targetAppName.EndsWith("spu"))
             {
