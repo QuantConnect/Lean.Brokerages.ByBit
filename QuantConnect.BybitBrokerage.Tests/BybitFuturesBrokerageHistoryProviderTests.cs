@@ -59,7 +59,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                     new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.Trade, false),
                     new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                     new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.OpenInterest, false)
-                    
+
 
                 };
             }
@@ -108,7 +108,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                 historyProvider.SetBrokerage(_brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
                     null, null, null, null,
-                    false, new DataPermissionManager()));
+                    false, new DataPermissionManager(), null));
 
                 var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
 
@@ -181,7 +181,7 @@ namespace QuantConnect.BybitBrokerage.Tests
             var apiUrl = Config.Get("bybit-api-url", "https://api-testnet.bybit.com");
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
-            return new BybitFuturesBrokerage(
+            return new BybitBrokerage(
                 apiKey,
                 apiSecret,
                 apiUrl,

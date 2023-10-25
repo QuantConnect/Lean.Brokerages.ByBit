@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using QuantConnect.BybitBrokerage.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
@@ -41,7 +42,7 @@ public partial class BybitBrokerage
         }
 
         var enumerator = _aggregator.Add(dataConfig, newDataAvailableHandler);
-        SubscriptionManager.Subscribe(dataConfig);
+        GetSubscriptionManager(dataConfig.Symbol).Subscribe(dataConfig);
 
         return enumerator;
     }
@@ -52,7 +53,7 @@ public partial class BybitBrokerage
     /// <param name="dataConfig">Subscription config to be removed</param>
     public void Unsubscribe(SubscriptionDataConfig dataConfig)
     {
-        SubscriptionManager.Unsubscribe(dataConfig);
+        GetSubscriptionManager(dataConfig.Symbol).Unsubscribe(dataConfig);
         _aggregator.Remove(dataConfig);
     }
 
@@ -99,19 +100,6 @@ public partial class BybitBrokerage
         );
     }
 
-    private string GetOrderBookDepthConfigName()
-    {
-        switch (Category)
-        {
-            case BybitProductCategory.Spot:
-                return "bybit-orderbook-depth";
-            case BybitProductCategory.Linear:
-            case BybitProductCategory.Inverse:
-                return "bybit-futures-orderbook-depth";
-            case BybitProductCategory.Option:
-                return "bybit-options-orderbook-depth";
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private DataQueueHandlerSubscriptionManager GetSubscriptionManager(Symbol symbol) => _subscriptionManagers[GetBybitProductCategory(symbol)];
 }

@@ -44,7 +44,7 @@ public class BybitAccountApiEndpoint : BybitApiEndpoint
     /// </summary>
     /// <param name="category">The product category</param>
     /// <returns>The wallet balances</returns>
-    public BybitBalance GetWalletBalances(BybitProductCategory category)
+    public BybitBalance GetWalletBalances()
     {
         var parameters = new KeyValuePair<string, string>[]
         {
@@ -52,7 +52,7 @@ public class BybitAccountApiEndpoint : BybitApiEndpoint
         };
 
         var result =
-            ExecuteGetRequest<BybitPageResult<BybitBalance>>("/account/wallet-balance", category, parameters, true);
+            ExecuteGetRequest<BybitPageResult<BybitBalance>>("/account/wallet-balance", null, parameters, true);
 
         return result.List[0];
     }

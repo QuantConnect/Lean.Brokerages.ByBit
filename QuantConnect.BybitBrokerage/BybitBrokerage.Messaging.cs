@@ -125,9 +125,8 @@ public partial class BybitBrokerage
                 continue;
             }
 
-
             var symbol = tradeUpdate.Symbol;
-            var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSupportedSecurityType(), MarketName);
+            var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSecurityType(tradeUpdate.Category), MarketName);
             var filledQuantity = Math.Abs(tradeUpdate.ExecutionQuantity);
 
             _remainingFillQuantity.TryGetValue(leanOrder.Id, out var accumulatedFilledQuantity);
@@ -145,12 +144,12 @@ public partial class BybitBrokerage
             var fee = OrderFee.Zero;
             if (tradeUpdate.ExecutionFee != 0)
             {
-                var currency = Category switch
+                var currency = tradeUpdate.Category switch
                 {
                     BybitProductCategory.Linear => "USDT",
                     BybitProductCategory.Inverse => GetBaseCurrency(symbol),
                     BybitProductCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
-                    _ => throw new NotSupportedException($"category {Category} not implemented")
+                    _ => throw new NotSupportedException($"category {tradeUpdate.Category} not implemented")
                 };
                 fee = new OrderFee(new CashAmount(tradeUpdate.ExecutionFee, currency));
             }
@@ -217,7 +216,7 @@ public partial class BybitBrokerage
     /// Processes WSS messages from the public market data streams
     /// </summary>
     /// <param name="webSocketMessage">The message to process</param>
-    private void OnDataMessage(WebSocketMessage webSocketMessage)
+    private void OnDataMessage(WebSocketMessage webSocketMessage, BybitProductCategory category)
     {
         var data = (WebSocketClientWrapper.TextMessage)webSocketMessage.Data;
         try
@@ -239,15 +238,15 @@ public partial class BybitBrokerage
                 var topicStr = topic.Value<string>();
                 if (topicStr.StartsWith("publicTrade"))
                 {
-                    HandleTradeMessage(obj);
+                    HandleTradeMessage(obj, category);
                 }
                 else if (topicStr.StartsWith("orderbook"))
                 {
-                    HandleOrderBookUpdate(obj);
+                    HandleOrderBookUpdate(obj, category);
                 }
                 else if (topicStr.StartsWith("tickers"))
                 {
-                    HandleTickerMessage(obj);
+                    HandleTickerMessage(obj, category);
                 }
             }
         }
@@ -258,14 +257,14 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleTickerMessage(JToken message)
+    private void HandleTickerMessage(JToken message, BybitProductCategory category)
     {
         var tickerMessage = JsonConvert.DeserializeObject<BybitDataMessage<BybitTicker>>(message.ToString(), Settings);
         var ticker = tickerMessage.Data;
 
         if (!ticker.OpenInterest.HasValue) return;
 
-        var leanSymbol = _symbolMapper.GetLeanSymbol(ticker.Symbol, GetSupportedSecurityType(), MarketName);
+        var leanSymbol = _symbolMapper.GetLeanSymbol(ticker.Symbol, GetSecurityType(category), MarketName);
 
         var tick = new OpenInterest(tickerMessage.Time, leanSymbol, ticker.OpenInterest.Value);
         lock (_tickLocker)
@@ -274,36 +273,36 @@ public partial class BybitBrokerage
         }
     }
 
-    private void HandleTradeMessage(JToken message)
+    private void HandleTradeMessage(JToken message, BybitProductCategory category)
     {
         var trades = message.ToObject<BybitDataMessage<BybitTickUpdate[]>>();
         foreach (var trade in trades.Data)
         {
             // var tradeValue = trade.Side == OrderSide.Buy ? trade.Value : trade.Value * -1;
-            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName), trade.Time,
+            EmitTradeTick(_symbolMapper.GetLeanSymbol(trade.Symbol, GetSecurityType(category), MarketName), trade.Time,
                 trade.Price, trade.Quantity);
         }
     }
 
-    private void HandleOrderBookUpdate(JObject jObject)
+    private void HandleOrderBookUpdate(JObject jObject, BybitProductCategory category)
     {
         var orderBookUpdate = jObject.ToObject<BybitDataMessage<BybitOrderBookUpdate>>(JsonSerializer);
         var orderBookData = orderBookUpdate.Data;
 
         if (orderBookUpdate.Type == BybitMessageType.Snapshot || orderBookUpdate.Data.UpdateId == 1)
         {
-            HandleOrderBookSnapshot(orderBookData);
+            HandleOrderBookSnapshot(orderBookData, category);
         }
         // Delta
         else
         {
-            HandleOrderBookDelta(orderBookData);
+            HandleOrderBookDelta(orderBookData, category);
         }
     }
 
-    private void HandleOrderBookSnapshot(BybitOrderBookUpdate orderBookUpdate)
+    private void HandleOrderBookSnapshot(BybitOrderBookUpdate orderBookUpdate, BybitProductCategory category)
     {
-        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSupportedSecurityType(), MarketName);
+        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSecurityType(category), MarketName);
 
         if (!_orderBooks.TryGetValue(symbol, out var orderBook))
         {
@@ -331,9 +330,9 @@ public partial class BybitBrokerage
             orderBook.BestAskSize);
     }
 
-    private void HandleOrderBookDelta(BybitOrderBookUpdate orderBookUpdate)
+    private void HandleOrderBookDelta(BybitOrderBookUpdate orderBookUpdate, BybitProductCategory category)
     {
-        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSupportedSecurityType(), MarketName);
+        var symbol = _symbolMapper.GetLeanSymbol(orderBookUpdate.Symbol, GetSecurityType(category), MarketName);
 
         if (!_orderBooks.TryGetValue(symbol, out var orderBook))
         {
@@ -473,7 +472,8 @@ public partial class BybitBrokerage
     private List<string> GetTopics(Symbol symbol)
     {
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-        var depthString = GetDefaultOrderBookDepth(Category);
+        var category = GetBybitProductCategory(symbol);
+        var depthString = GetDefaultOrderBookDepth(category);
 
         var topics = new List<string>
         {
@@ -482,7 +482,7 @@ public partial class BybitBrokerage
         };
 
         // This is required for open interest
-        if (Category != BybitProductCategory.Spot)
+        if (category != BybitProductCategory.Spot)
         {
             topics.Add($"tickers.{brokerageSymbol}");
         }
@@ -493,7 +493,6 @@ public partial class BybitBrokerage
     private void Connect(BybitApi api)
     {
         if (WebSocket == null) return;
-
 
         WebSocket.Initialize(_privateWebSocketUrl);
 

@@ -121,7 +121,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                 historyProvider.SetBrokerage(brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
                     null, null, null, null,
-                    false, new DataPermissionManager()));
+                    false, new DataPermissionManager(), null));
 
                 var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
 
@@ -141,7 +141,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                         DataNormalizationMode.Adjusted,
                         tickType)
                 };
-                
+
                 var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc).ToArray();
                 foreach (var slice in historyArray)
                 {
