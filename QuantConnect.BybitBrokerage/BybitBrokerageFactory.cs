@@ -75,7 +75,7 @@ namespace QuantConnect.BybitBrokerage
         /// Gets a brokerage model that can be used to model this brokerage's unique behaviors
         /// </summary>
         /// <param name="orderProvider">The order provider</param>
-        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BybitBrokerageModel();
+        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BybitBrokerageModel(AccountType.Margin);
 
         /// <summary>
         /// Creates a new IBrokerage instance

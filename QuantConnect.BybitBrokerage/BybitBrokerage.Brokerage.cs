@@ -126,7 +126,8 @@ public partial class BybitBrokerage
 
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order);
+            var result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order,
+                useMargin: _algorithm.BrokerageModel.AccountType == AccountType.Margin);
             order.BrokerId.Add(result.OrderId);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {

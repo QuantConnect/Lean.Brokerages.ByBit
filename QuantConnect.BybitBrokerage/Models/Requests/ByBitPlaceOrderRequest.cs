@@ -40,6 +40,12 @@ public class ByBitPlaceOrderRequest
     public string Symbol { get; set; }
 
     /// <summary>
+    /// Whether to use margin. 0 (default): false (spot trading); 1: true (margin trading).
+    /// Valid for spot trading in Unified Trading Account only.
+    /// </summary>
+    public int? IsLeverage { get; set; }
+
+    /// <summary>
     /// Order side
     /// </summary>
     public OrderSide Side { get; set; }
@@ -133,12 +139,12 @@ public class ByBitPlaceOrderRequest
     /// Reduce only order
     /// </summary>
     public bool? ReduceOnly { get; set; }
-    
+
     /// <summary>
     /// Close on trigger
     /// </summary>
     public bool? CloseOnTrigger { get; set; }
-    
+
     /// <summary>
     /// Market maker protection
     /// </summary>
@@ -159,17 +165,17 @@ public class ByBitPlaceOrderRequest
     /// Stop-loss limit price
     /// </summary>
     public decimal? SlLimitPrice { get; set; }
-    
+
     /// <summary>
     /// Take-profit order type
     /// </summary>
     public OrderType? TpOrderType { get; set; }
-    
+
     /// <summary>
     /// Stop-loss order type
     /// </summary>
     public OrderType? SlOrderType { get; set; }
-    
+
     /// <summary>
     /// Take-profit / Stop-loss mode
     /// </summary>
