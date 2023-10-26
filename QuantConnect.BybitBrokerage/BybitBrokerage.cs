@@ -221,7 +221,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _symbolMapper = new SymbolPropertiesDatabaseSymbolMapper(MarketName);
         OrderProvider = orderProvider;
 
-        int maxSymbolsPerWebsocketConnection = Config.GetInt("bybit-maximum-websocket-connections", 128);
+        int maxSymbolsPerWebsocketConnection = Config.GetInt("bybit-maximum-websocket-connections");
         int maxWebsocketConnections = Config.GetInt("bybit-maximum-symbols-per-connection", 16);
         using (var tempClient = maxWebsocketConnections > 0
             ? GetApiClient(_symbolMapper, securityProvider, restApiUrl, apiKey, apiSecret, vipLevel)
