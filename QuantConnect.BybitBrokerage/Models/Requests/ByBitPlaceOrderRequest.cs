@@ -43,6 +43,7 @@ public class ByBitPlaceOrderRequest
     /// Whether to use margin. 0 (default): false (spot trading); 1: true (margin trading).
     /// Valid for spot trading in Unified Trading Account only.
     /// </summary>
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public int? IsLeverage { get; set; }
 
     /// <summary>

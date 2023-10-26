@@ -95,7 +95,6 @@ public partial class BybitBrokerage
             securityProvider: null,
             aggregator,
             job,
-            Market.Bybit,
             vipLevel
         );
     }
