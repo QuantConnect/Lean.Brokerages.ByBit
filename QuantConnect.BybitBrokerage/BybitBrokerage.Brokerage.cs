@@ -34,42 +34,43 @@ public partial class BybitBrokerage
     /// Gets all open orders on the account.
     /// NOTE: The order objects returned do not have QC order IDs.
     /// </summary>
-    /// <returns>The open orders returned from IB</returns>
+    /// <returns>The open orders returned from Bybit</returns>
     public override List<Order> GetOpenOrders()
     {
-        var orders = ApiClient.Trade.GetOpenOrders(Category);
-
-        var mapped = orders.Select(item =>
+        var orders = new List<Order>();
+        foreach (var category in SupportedBybitProductCategories)
         {
-            var symbol = _symbolMapper.GetLeanSymbol(item.Symbol, GetSupportedSecurityType(), MarketName);
-            var price = item.Price!.Value;
-            Order order;
-            if (item.StopOrderType != null)
-            {
-                if (item.StopOrderType == StopOrderType.TrailingStop)
+            orders.AddRange(ApiClient.Trade.GetOpenOrders(category)
+                .Select(bybitOrder =>
                 {
-                    throw new NotSupportedException();
-                }
+                    var symbol = _symbolMapper.GetLeanSymbol(bybitOrder.Symbol, GetSecurityType(category), MarketName);
+                    var price = bybitOrder.Price!.Value;
+                    Order order;
+                    if (bybitOrder.StopOrderType != null)
+                    {
+                        if (bybitOrder.StopOrderType == StopOrderType.TrailingStop)
+                        {
+                            throw new NotSupportedException();
+                        }
 
-                order = item.OrderType == OrderType.Limit
-                    ? new StopLimitOrder(symbol, item.Quantity, price, item.Price!.Value, item.CreateTime)
-                    : new StopMarketOrder(symbol, item.Quantity, price, item.CreateTime);
-                if (Category == BybitProductCategory.Spot)
-                {
-                }
-            }
-            else
-            {
-                order = item.OrderType == OrderType.Limit
-                    ? new LimitOrder(symbol, item.Quantity, price, item.CreateTime)
-                    : new MarketOrder(symbol, item.Quantity, item.CreateTime);
-            }
+                        order = bybitOrder.OrderType == OrderType.Limit
+                            ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.Price!.Value, bybitOrder.CreateTime)
+                            : new StopMarketOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime);
+                    }
+                    else
+                    {
+                        order = bybitOrder.OrderType == OrderType.Limit
+                            ? new LimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime)
+                            : new MarketOrder(symbol, bybitOrder.Quantity, bybitOrder.CreateTime);
+                    }
 
-            order.BrokerId.Add(item.OrderId);
-            order.Status = ConvertOrderStatus(item.Status);
-            return order;
-        });
-        return mapped.ToList();
+                    order.BrokerId.Add(bybitOrder.OrderId);
+                    order.Status = ConvertOrderStatus(bybitOrder.Status);
+                    return order;
+                }));
+        }
+
+        return orders;
     }
 
     /// <summary>
@@ -78,16 +79,21 @@ public partial class BybitBrokerage
     /// <returns>The current holdings from the account</returns>
     public override List<Holding> GetAccountHoldings()
     {
-        var holdings = ApiClient.Position.GetPositions(Category)
-            .Select(x => new Holding
-            {
-                Symbol = _symbolMapper.GetLeanSymbol(x.Symbol, GetSupportedSecurityType(), MarketName),
-                AveragePrice = x.AveragePrice,
-                Quantity = x.Side == Models.Enums.PositionSide.Buy ? x.Size : x.Size * -1,
-                MarketValue = x.PositionValue,
-                UnrealizedPnL = x.UnrealisedPnl,
-                MarketPrice = x.MarkPrice
-            }).ToList();
+        var holdings = new List<Holding>();
+        foreach (var category in SupportedBybitProductCategories)
+        {
+            holdings.AddRange(ApiClient.Position.GetPositions(category)
+                .Select(bybitPosition => new Holding
+                {
+                    Symbol = _symbolMapper.GetLeanSymbol(bybitPosition.Symbol, GetSecurityType(category), MarketName),
+                    AveragePrice = bybitPosition.AveragePrice,
+                    Quantity = bybitPosition.Side == Models.Enums.PositionSide.Buy ? bybitPosition.Size : bybitPosition.Size * -1,
+                    MarketValue = bybitPosition.PositionValue,
+                    UnrealizedPnL = bybitPosition.UnrealisedPnl,
+                    MarketPrice = bybitPosition.MarkPrice
+                }));
+        }
+
         return holdings.Count > 0 ? holdings : base.GetAccountHoldings(_job?.BrokerageData, _algorithm?.Securities?.Values);
     }
 
@@ -98,7 +104,7 @@ public partial class BybitBrokerage
     public override List<CashAmount> GetCashBalance()
     {
         return ApiClient.Account
-            .GetWalletBalances(Category).Assets
+            .GetWalletBalances().Assets
             .Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
     }
 
@@ -120,7 +126,8 @@ public partial class BybitBrokerage
 
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.Trade.PlaceOrder(Category, order);
+            var result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order,
+                useMargin: _algorithm.BrokerageModel.AccountType == AccountType.Margin);
             order.BrokerId.Add(result.OrderId);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
@@ -139,7 +146,8 @@ public partial class BybitBrokerage
     /// <returns>True if the request was made for the order to be updated, false otherwise</returns>
     public override bool UpdateOrder(Order order)
     {
-        if (Category == BybitProductCategory.Spot)
+        var category = GetBybitProductCategory(order.Symbol);
+        if (category == BybitProductCategory.Spot)
         {
             throw new NotSupportedException("BybitBrokerage.UpdateOrder: Order update not supported for spot. Please cancel and re-create.");
         }
@@ -155,7 +163,7 @@ public partial class BybitBrokerage
 
         _messageHandler.WithLockedStream(() =>
         {
-            ApiClient.Trade.UpdateOrder(Category, order);
+            ApiClient.Trade.UpdateOrder(category, order);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
                 Status = OrderStatus.UpdateSubmitted
@@ -196,8 +204,8 @@ public partial class BybitBrokerage
                     "Order already canceled or cancellation submitted"));
                 return;
             }
-            
-            ApiClient.Trade.CancelOrder(Category, order);
+
+            ApiClient.Trade.CancelOrder(GetBybitProductCategory(order.Symbol), order);
             canceled = true;
         });
         return canceled;
@@ -239,7 +247,7 @@ public partial class BybitBrokerage
         WebSocket.Close();
     }
 
-    
-    
+
+
     #endregion
 }

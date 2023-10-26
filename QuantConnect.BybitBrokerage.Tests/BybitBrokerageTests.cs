@@ -13,7 +13,6 @@
  * limitations under the License.
 */
 
-
 using System;
 using System.Linq;
 using System.Threading;
@@ -45,12 +44,8 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected override decimal GetDefaultQuantity() => 0.0005m;
 
         protected override bool IsAsync() => false;
-        // protected override bool IsCancelAsync() => true;
-
 
         protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Bybit);
-
-        
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
@@ -63,7 +58,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
             return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
-                securityProvider, new AggregationManager(), null, Market.Bybit);
+                securityProvider, new AggregationManager(), null);
         }
 
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
@@ -71,13 +66,11 @@ namespace QuantConnect.BybitBrokerage.Tests
             return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
         }
 
-
         protected override decimal GetAskPrice(Symbol symbol)
         {
             var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
             return _client.Market.GetTicker(BybitProductCategory.Spot, brokerageSymbol).Ask1Price!.Value;
         }
-
 
         /// <summary>
         /// Provides the data required to test each order type in various cases

@@ -75,7 +75,7 @@ namespace QuantConnect.BybitBrokerage
         /// Gets a brokerage model that can be used to model this brokerage's unique behaviors
         /// </summary>
         /// <param name="orderProvider">The order provider</param>
-        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BybitBrokerageModel();
+        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BybitBrokerageModel(AccountType.Margin);
 
         /// <summary>
         /// Creates a new IBrokerage instance
@@ -98,36 +98,14 @@ namespace QuantConnect.BybitBrokerage
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
 
-
-            var agg = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
+            var aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
+            var brokerage = new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel);
+            Composer.Instance.AddPart<IDataQueueHandler>(brokerage);
 
-            var brokerage = CreateBrokerage(job, algorithm, agg, apiKey, apiSecret, apiUrl, wsUrl, vipLevel);
-            Composer.Instance.AddPart(brokerage);
             return brokerage;
         }
-
-        /// <summary>
-        /// Creates a new IBrokerage instance
-        /// </summary>
-        /// <param name="job">The job packet to create the brokerage for</param>
-        /// <param name="algorithm">The algorithm instance</param>
-        /// <param name="aggregator">The aggregator for consolidating ticks</param>
-        /// <param name="apiKey">The api key</param>
-        /// <param name="apiSecret">The api secret</param>
-        /// <param name="apiUrl">The rest api url</param>
-        /// <param name="wsUrl">The websocket base url</param>
-        /// <param name="vipLevel">Bybit VIP level</param>
-        /// <returns>A new brokerage instance</returns>
-        protected virtual IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm,
-            IDataAggregator aggregator, string apiKey, string apiSecret, string apiUrl, string wsUrl,
-            BybitVIPLevel vipLevel)
-        {
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job,
-                vipLevel);
-        }
-
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.

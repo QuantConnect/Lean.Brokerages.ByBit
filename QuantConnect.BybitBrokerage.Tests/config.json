@@ -2,6 +2,9 @@
     "bybit-api-key": "",
     "bybit-api-secret": "",
 
+  "bybit-maximum-websocket-connections": 0,
+  "bybit-maximum-symbols-per-connection": 16,
+
     "data-folder": "../../../../Lean/Data/",
     "bybit-api-url": "https://api-testnet.bybit.com",
     "bybit-websocket-url": "wss://stream-testnet.bybit.com",

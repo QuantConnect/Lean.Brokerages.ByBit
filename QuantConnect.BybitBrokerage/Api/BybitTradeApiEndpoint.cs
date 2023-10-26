@@ -75,9 +75,13 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
     /// <param name="category">The product category</param>
     /// <param name="order">The order to place</param>
     /// <returns>The order update response</returns>
-    public BybitUpdateOrderResponse PlaceOrder(BybitProductCategory category, Order order)
+    public BybitUpdateOrderResponse PlaceOrder(BybitProductCategory category, Order order, bool useMargin)
     {
         var placeOrderRequest = CreateRequest(category, order);
+        if (category == BybitProductCategory.Spot)
+        {
+            placeOrderRequest.IsLeverage = useMargin ? 1 : 0;
+        }
 
         return ExecutePostRequest<BybitUpdateOrderResponse>("/order/create", placeOrderRequest);
     }
@@ -111,7 +115,6 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
 
         return FetchAll<BybitOrder>("/order/realtime", category, 50, parameters, true);
     }
-
 
     private ByBitPlaceOrderRequest CreateRequest(BybitProductCategory category, Order order)
     {
@@ -151,7 +154,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
                 {
                     var price = GetTickerPrice(category, order);
                     // Spot market buy orders require price in quote currency
-                    req.Quantity *= price; 
+                    req.Quantity *= price;
                 }
 
                 break;
