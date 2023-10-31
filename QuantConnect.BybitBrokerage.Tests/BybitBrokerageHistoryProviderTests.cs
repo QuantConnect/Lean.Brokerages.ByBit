@@ -69,9 +69,9 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Second, Time.OneMinute, TickType.Trade),
+                        Resolution.Second, Time.OneMinute, TickType.Trade, false),
                     new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Minute, Time.OneHour, TickType.Quote),
+                        Resolution.Minute, Time.OneHour, TickType.Quote, false),
                 };
             }
         }
@@ -83,14 +83,14 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
+                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade, false),
 
                     // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily,
-                        TimeSpan.FromDays(15), TickType.Trade),
+                        TimeSpan.FromDays(15), TickType.Trade, false),
 
                     //invalid security type
-                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade),
+                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                 };
             }
         }
@@ -107,7 +107,8 @@ namespace QuantConnect.BybitBrokerage.Tests
         [Test]
         [TestCaseSource(nameof(NoHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
+        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,
+            bool throwsException)
         {
             BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, false, true);
         }
@@ -186,7 +187,11 @@ namespace QuantConnect.BybitBrokerage.Tests
                     {
                         var data = slice.AllData[0];
                         Assert.AreEqual(symbol, data.Symbol);
-                        Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
+
+                        if (data.DataType != MarketDataType.Tick)
+                        {
+                            Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
+                        }
                     }
 
                     // No missing bars
@@ -213,7 +218,7 @@ namespace QuantConnect.BybitBrokerage.Tests
             }
         }
 
-        protected virtual Brokerage CreateBrokerage()
+        private Brokerage CreateBrokerage()
         {
             var apiKey = Config.Get("bybit-api-key");
             var apiSecret = Config.Get("bybit-api-secret");

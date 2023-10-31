@@ -41,7 +41,7 @@ namespace QuantConnect.BybitBrokerage.Tests
         }
 
         [Test, TestCaseSource(nameof(TestParameters))]
-        public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
+        public virtual void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
             StreamsData(symbol, resolution, throwsException, Brokerage);
         }

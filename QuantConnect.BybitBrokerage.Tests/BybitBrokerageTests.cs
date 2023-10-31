@@ -36,10 +36,12 @@ namespace QuantConnect.BybitBrokerage.Tests
     [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public partial class BybitBrokerageTests : BrokerageTests
     {
-        protected static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.Crypto, "bybit");
+        private static Symbol BTCUSDT = Symbol.Create("BTCUSDT", SecurityType.Crypto, "bybit");
         private BybitApi _client;
         protected override Symbol Symbol { get; } = BTCUSDT;
         protected override SecurityType SecurityType => SecurityType.Crypto;
+
+        protected virtual BybitProductCategory Category => BybitProductCategory.Spot;
 
         protected override decimal GetDefaultQuantity() => 0.0005m;
 
@@ -49,7 +51,10 @@ namespace QuantConnect.BybitBrokerage.Tests
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
+            var model = new BybitBrokerageModel(AccountType.Margin);
+
             var algorithm = new Mock<IAlgorithm>();
+            algorithm.SetupGet(x => x.BrokerageModel).Returns(model);
 
             var apiKey = Config.Get("bybit-api-key");
             var apiSecret = Config.Get("bybit-api-secret");
@@ -61,6 +66,8 @@ namespace QuantConnect.BybitBrokerage.Tests
                 securityProvider, new AggregationManager(), null);
         }
 
+        protected virtual decimal TakerFee => BybitFeeModel.TakerNonVIPFee;
+
         protected virtual BybitApi CreateRestApiClient(string apiKey, string apiSecret, string apiUrl)
         {
             return new BybitApi(SymbolMapper, null, apiKey, apiSecret, apiUrl);
@@ -69,7 +76,7 @@ namespace QuantConnect.BybitBrokerage.Tests
         protected override decimal GetAskPrice(Symbol symbol)
         {
             var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(symbol);
-            return _client.Market.GetTicker(BybitProductCategory.Spot, brokerageSymbol).Ask1Price!.Value;
+            return _client.Market.GetTicker(Category, brokerageSymbol).Ask1Price!.Value;
         }
 
         /// <summary>
@@ -190,7 +197,7 @@ namespace QuantConnect.BybitBrokerage.Tests
             var beforeQuantity = beforeHoldings == null ? 0 : beforeHoldings.Amount;
             var afterQuantity = afterHoldings == null ? 0 : afterHoldings.Amount;
 
-            var fee = order.Quantity * BybitFeeModel.TakerNonVIPFee;
+            var fee = order.Quantity * TakerFee;
 
             Assert.AreEqual(GetDefaultQuantity(), afterQuantity - beforeQuantity + fee);
         }

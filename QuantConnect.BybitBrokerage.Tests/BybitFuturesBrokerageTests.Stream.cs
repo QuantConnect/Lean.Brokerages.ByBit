@@ -14,10 +14,6 @@
 */
 
 using NUnit.Framework;
-using System.Threading;
-using QuantConnect.Data;
-using QuantConnect.Logging;
-using QuantConnect.Data.Market;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
@@ -39,44 +35,9 @@ namespace QuantConnect.BybitBrokerage.Tests
         }
 
         [Test, TestCaseSource(nameof(TestParameters))]
-        public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
+        public override void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
-            var cancellationToken = new CancellationTokenSource();
-            var brokerage = (BybitBrokerage)Brokerage;
-
-            SubscriptionDataConfig[] configs;
-            if (resolution == Resolution.Tick)
-            {
-                var tradeConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Trade);
-                var quoteConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Quote);
-                configs = new[] { tradeConfig, quoteConfig };
-            }
-            else
-            {
-                configs = new[] {
-                    GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
-                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution) 
-                };
-            }
-
-            foreach (var config in configs)
-            {
-                ProcessFeed(brokerage.Subscribe(config, (s, e) => { }),
-                    cancellationToken,
-                    (baseData) => { if (baseData != null) { Log.Trace($"{baseData}"); }
-                    });
-            }
-
-            Thread.Sleep(20000);
-
-            foreach (var config in configs)
-            {
-                brokerage.Unsubscribe(config);
-            }
-
-            Thread.Sleep(20000);
-
-            cancellationToken.Cancel();
+            base.StreamsData(symbol, resolution, throwsException);
         }
     }
 }
