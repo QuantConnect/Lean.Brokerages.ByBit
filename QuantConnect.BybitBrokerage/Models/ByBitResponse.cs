@@ -22,8 +22,7 @@ namespace QuantConnect.BybitBrokerage.Models
     /// <summary>
     /// Bybits default http response message
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class ByBitResponse<T>
+    public class ByBitResponse
     {
         /// <summary>
         /// Success/Error code
@@ -43,16 +42,25 @@ namespace QuantConnect.BybitBrokerage.Models
         /// </summary>
         [JsonProperty("retExtInfo")]
         public object ExtendedInfo { get; set; }
-
-        /// <summary>
-        /// Business data result
-        /// </summary>
-        public T Result { get; set; }
-
+        
         /// <summary>
         /// Current time
         /// </summary>
         [JsonConverter(typeof(BybitTimeConverter))]
         public DateTime Time { get; set; }
     }
+    
+    /// <summary>
+    /// Bybits default http data response message
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class ByBitResponse<T> : ByBitResponse
+    {
+        /// <summary>
+        /// Business data result
+        /// </summary>
+        public T Result { get; set; }
+     
+    }
+
 }
