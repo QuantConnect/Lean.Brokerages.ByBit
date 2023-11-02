@@ -31,28 +31,26 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     // valid
-                    new TestCaseData(ETHUSDT, Resolution.Tick, Time.OneMinute, TickType.Trade, false),
-                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Trade, false),
-                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.Trade, false),
-                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
-                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.OpenInterest, false)
+                    new TestCaseData(ETHUSDT, Resolution.Tick, Time.OneMinute, TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade),
+                    new TestCaseData(ETHUSDT, Resolution.Hour, Time.OneDay, TickType.OpenInterest)
                 };
             }
         }
 
 
         [Test, TestCaseSource(nameof(ValidHistory))]
-        public override void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,
-            bool throwsException)
+        public override void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
-            base.GetsHistory(symbol, resolution, period, tickType, throwsException);
+            base.GetsHistory(symbol, resolution, period, tickType);
         }
 
-        [Ignore("Same as base")]
-        public override void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType,
-            bool throwsException)
+        [Ignore("The brokerage is shared between different product categories, therefore this test is only required in the base class")]
+        public override void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
-            base.GetEmptyHistory(symbol, resolution, period, tickType, throwsException);
+            base.GetEmptyHistory(symbol, resolution, period, tickType);
         }
     }
 }

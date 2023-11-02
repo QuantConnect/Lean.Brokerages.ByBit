@@ -88,7 +88,7 @@ public partial class BybitFuturesBrokerageTests : BybitBrokerageTests
         base.LongFromShort(parameters);
     }
 
-    [Ignore("Base")]
+    [Ignore("The brokerage is shared between different product categories, therefore this test is only required in the base class")]
     public override void GetAccountHoldings()
     {
         base.GetAccountHoldings();
