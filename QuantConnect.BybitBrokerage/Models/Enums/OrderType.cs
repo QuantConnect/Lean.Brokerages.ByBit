@@ -13,6 +13,8 @@
  * limitations under the License.
 */
 
+using System.Runtime.Serialization;
+
 namespace QuantConnect.BybitBrokerage.Models.Enums;
 
 /// <summary>
@@ -28,5 +30,10 @@ public enum OrderType
     /// <summary>
     /// Limit order
     /// </summary>
-    Limit
+    Limit,
+    
+    /// <summary>
+    /// Unknown. Used in funding trade executions
+    /// </summary>
+    [EnumMember(Value = "UNKNOWN")] Unknown,
 }
