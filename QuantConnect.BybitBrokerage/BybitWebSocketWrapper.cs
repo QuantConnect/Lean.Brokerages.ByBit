@@ -31,6 +31,7 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
     /// </summary>
     protected override void OnOpen()
     {
+        CleanUpTimer();
         _pingTimer = new Timer(TimeSpan.FromSeconds(20).TotalMilliseconds);
         _pingTimer.Elapsed += PingTimerElapsed;
         _pingTimer.Start();
@@ -42,6 +43,24 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
     /// </summary>
     protected override void OnClose(WebSocketCloseData e)
     {
+        CleanUpTimer();
+        base.OnClose(e);
+    }
+
+    /// <summary>
+    /// Event invocator for the <see cref="WebSocketClientWrapper.OnError"/> event
+    /// </summary>
+    protected override void OnError(WebSocketError e)
+    {
+        CleanUpTimer();
+        base.OnError(e);
+    }
+
+    /// <summary>
+    /// Helper method to clean up timer if required
+    /// </summary>
+    private void CleanUpTimer()
+    {
         if (_pingTimer != null)
         {
             _pingTimer.Stop();
@@ -49,11 +68,8 @@ public class BybitWebSocketWrapper : WebSocketClientWrapper
             _pingTimer.Dispose();
             _pingTimer = null;
         }
-
-        base.OnClose(e);
     }
-    
-    
+
     private void PingTimerElapsed(object sender, ElapsedEventArgs e)
     {
         Send("{\"op\":\"ping\"}");
