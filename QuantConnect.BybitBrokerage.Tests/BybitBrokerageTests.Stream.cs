@@ -33,6 +33,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                 return new[]
                 {
                     // valid parameters, for example
+                    new TestCaseData(MCUSDT, Resolution.Second, false),
                     new TestCaseData(BTCUSDT, Resolution.Tick, false),
                     new TestCaseData(BTCUSDT, Resolution.Minute, false),
                     new TestCaseData(BTCUSDT, Resolution.Second, false),
