@@ -326,6 +326,11 @@ public partial class BybitBrokerage
         }
 
         orderBook.BestBidAskUpdated += OnBestBidAskUpdated;
+        if(orderBook.BestBidPrice == 0 && orderBook.BestAskPrice == 0)
+        {
+            // nothing to emit, can happen with illiquid assets
+            return;
+        }
         EmitQuoteTick(symbol, orderBook.BestBidPrice, orderBook.BestBidSize, orderBook.BestAskPrice,
             orderBook.BestAskSize);
     }
