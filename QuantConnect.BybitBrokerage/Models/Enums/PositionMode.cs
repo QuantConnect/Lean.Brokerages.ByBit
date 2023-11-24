@@ -11,9 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-using System.Runtime.Serialization;
+*/
 
 namespace QuantConnect.BybitBrokerage.Models.Enums;
 
@@ -26,6 +24,7 @@ public enum PositionMode
     /// One way mode
     /// </summary>
     MergedSingle = 0,
+
     /// <summary>
     /// Hedge mode
     /// </summary>

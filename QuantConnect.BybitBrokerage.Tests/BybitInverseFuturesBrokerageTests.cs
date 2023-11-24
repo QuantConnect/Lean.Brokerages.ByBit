@@ -31,7 +31,6 @@ public partial class BybitInverseFuturesBrokerageTests : BybitBrokerageTests
 
     protected override decimal GetDefaultQuantity() => 10m;
 
-
     /// <summary>
     /// Provides the data required to test each order type in various cases
     /// </summary>
@@ -47,8 +46,7 @@ public partial class BybitInverseFuturesBrokerageTests : BybitBrokerageTests
                 "LimitIfTouchedOrder")
         };
     }
-
-
+    
     [Test, TestCaseSource(nameof(OrderParameters))]
     public override void CancelOrders(OrderTestParameters parameters)
     {

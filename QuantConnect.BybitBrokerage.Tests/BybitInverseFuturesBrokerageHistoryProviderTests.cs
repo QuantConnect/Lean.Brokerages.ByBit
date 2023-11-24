@@ -23,7 +23,6 @@ namespace QuantConnect.BybitBrokerage.Tests
     {
         private static readonly Symbol ETHUSD = Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Bybit);
 
-
         private static TestCaseData[] ValidHistory
         {
             get
@@ -39,8 +38,7 @@ namespace QuantConnect.BybitBrokerage.Tests
                 };
             }
         }
-
-
+        
         [Test, TestCaseSource(nameof(ValidHistory))]
         public override void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
