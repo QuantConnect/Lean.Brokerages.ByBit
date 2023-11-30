@@ -198,10 +198,9 @@ public partial class BybitBrokerage
                 return;
             }
 
-            if (order.Status is OrderStatus.Canceled or OrderStatus.CancelPending)
+            if (order.Status is OrderStatus.Canceled)
             {
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1,
-                    "Order already canceled or cancellation submitted"));
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, "Order already canceled"));
                 return;
             }
 
