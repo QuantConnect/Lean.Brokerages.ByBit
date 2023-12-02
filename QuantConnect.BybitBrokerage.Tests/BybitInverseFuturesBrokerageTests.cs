@@ -13,9 +13,19 @@
  * limitations under the License.
 */
 
+using System;
+using System.Linq;
+using System.Threading;
 using NUnit.Framework;
 using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Data;
+using QuantConnect.Interfaces;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Logging;
+using QuantConnect.Orders;
+using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
+using QuantConnect.Util;
 
 namespace QuantConnect.BybitBrokerage.Tests;
 
@@ -27,10 +37,18 @@ public partial class BybitInverseFuturesBrokerageTests : BybitBrokerageTests
 
     protected override SecurityType SecurityType => SecurityType.Future;
     protected override BybitProductCategory Category => BybitProductCategory.Inverse;
-    protected override decimal TakerFee => 0.00025m;
+    protected override decimal TakerFee => 0.0000015m;
 
     protected override decimal GetDefaultQuantity() => 10m;
 
+    protected override IBrokerage CreateBrokerage(string apiKey, string apiSecret, string apiUrl,
+        string websocketUrl, IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
+        IDataAggregator aggregator)
+    {
+        return new BybitInverseFuturesBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm, orderProvider, securityProvider, new AggregationManager(), null);
+
+    }
+    
     /// <summary>
     /// Provides the data required to test each order type in various cases
     /// </summary>
@@ -88,10 +106,33 @@ public partial class BybitInverseFuturesBrokerageTests : BybitBrokerageTests
     {
         base.LongFromShort(parameters);
     }
-
-    [Ignore("The brokerage is shared between different product categories, therefore this test is only required in the base class")]
+    
+    
+    [Test]
     public override void GetAccountHoldings()
     {
-        base.GetAccountHoldings();
+        Log.Trace("");
+        Log.Trace("GET ACCOUNT HOLDINGS");
+        Log.Trace("");
+        var before = Brokerage.GetCashBalance();
+
+        var order = new MarketOrder(Symbol, GetDefaultQuantity(), DateTime.UtcNow);
+        PlaceOrderWaitForStatus(order);
+
+        Thread.Sleep(3000);
+
+        var after = Brokerage.GetCashBalance();
+
+        CurrencyPairUtil.DecomposeCurrencyPair(Symbol, out var baseCurrency, out _);
+        var beforeHoldings = before.FirstOrDefault(x => x.Currency == baseCurrency);
+        var afterHoldings = after.FirstOrDefault(x => x.Currency == baseCurrency);
+
+        var beforeQuantity = beforeHoldings == null ? 0 : beforeHoldings.Amount;
+        var afterQuantity = afterHoldings == null ? 0 : afterHoldings.Amount;
+
+        var fee = 0.00000015m;
+            
+        Assert.AreEqual(0, afterQuantity - beforeQuantity + fee);
     }
+
 }
