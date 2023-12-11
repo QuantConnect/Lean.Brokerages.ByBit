@@ -208,7 +208,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
             if (ticker == null)
             {
                 throw new KeyNotFoundException(
-                    $"BinanceBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
+                    $"BybitBrokerage: Unable to resolve currency conversion pair: {order.Symbol}");
             }
 
             tickerPrice = order.Direction == OrderDirection.Buy ? ticker.Ask1Price!.Value : ticker.Bid1Price!.Value;
