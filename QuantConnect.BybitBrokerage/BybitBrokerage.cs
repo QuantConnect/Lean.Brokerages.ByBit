@@ -48,12 +48,6 @@ namespace QuantConnect.BybitBrokerage;
 [BrokerageFactory(typeof(BybitBrokerageFactory))]
 public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 {
-    private static readonly List<BybitProductCategory> SupportedBybitProductCategories = new() { BybitProductCategory.Spot, BybitProductCategory.Linear };
-
-    private static readonly List<SecurityType> SuppotedSecurityTypes = new() { SecurityType.Crypto, SecurityType.CryptoFuture };
-
-    private static readonly string MarketName = Market.Bybit;
-
     private readonly Dictionary<BybitProductCategory, BrokerageMultiWebSocketSubscriptionManager> _subscriptionManagers = new();
 
     private IAlgorithm _algorithm;
@@ -63,6 +57,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private Lazy<BybitApi> _apiClientLazy;
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
+    protected virtual string MarketName => Market.Bybit;
+    protected virtual BybitAccountType WalletAccountType => BybitAccountType.Unified;
+    protected virtual SecurityType[] SuppotedSecurityTypes { get; } = { SecurityType.Crypto, SecurityType.CryptoFuture };
+    protected virtual BybitProductCategory[] SupportedBybitProductCategories { get; } =
+        { BybitProductCategory.Spot, BybitProductCategory.Linear };
+    
     /// <summary>
     /// Order provider
     /// </summary>
@@ -81,7 +81,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <summary>
     /// Parameterless constructor for brokerage
     /// </summary>
-    public BybitBrokerage() : base(MarketName)
+    public BybitBrokerage() : base(Market.Bybit)
     {
     }
 
@@ -120,7 +120,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     public BybitBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl,
         IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
         IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel = BybitVIPLevel.VIP0)
-        : base(MarketName)
+        : base(Market.Bybit)
     {
         Initialize(
             webSocketBaseUrl,
@@ -307,8 +307,9 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
 
         if (baseCanSubscribe && symbol.SecurityType == SecurityType.CryptoFuture)
         {
-            //Can only subscribe to non-inverse pairs
-            return CurrencyPairUtil.TryDecomposeCurrencyPair(symbol, out _, out var quoteCurrency) && quoteCurrency == "USDT";
+            return CurrencyPairUtil.TryDecomposeCurrencyPair(symbol, out _, out var quoteCurrency) &&
+                   (quoteCurrency is "USDT" || SupportedBybitProductCategories.Contains(BybitProductCategory.Inverse) &&
+                       quoteCurrency is "USD");
         }
 
         return baseCanSubscribe;
@@ -457,7 +458,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// Checks whether the specified symbol is supported by this brokerage by its security type
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsSupported(Symbol symbol)
+    protected bool IsSupported(Symbol symbol)
     {
         return SuppotedSecurityTypes.Contains(symbol.SecurityType);
     }
@@ -483,13 +484,18 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 return BybitProductCategory.Spot;
 
             case SecurityType.CryptoFuture:
-                if (!CurrencyPairUtil.TryDecomposeCurrencyPair(symbol, out _, out var quoteCurrency) ||
-                    quoteCurrency != "USDT")
+                if (CurrencyPairUtil.TryDecomposeCurrencyPair(symbol, out _, out var quoteCurrency))
                 {
-                    throw new ArgumentException($"Invalid symbol: {symbol}. Only linear futures are supported.");
+                    if (quoteCurrency == "USDT")
+                    {
+                        return BybitProductCategory.Linear;
+                    }
+                    if (quoteCurrency == "USD")
+                    {
+                        return BybitProductCategory.Inverse;
+                    }
                 }
-
-                return BybitProductCategory.Linear;
+                throw new ArgumentException($"Invalid symbol: {symbol}. Only linear futures are supported.");
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(symbol), symbol, "Not supported security type");

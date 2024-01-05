@@ -147,7 +147,7 @@ public partial class BybitBrokerage
                 var currency = tradeUpdate.Category switch
                 {
                     BybitProductCategory.Linear => "USDT",
-                    BybitProductCategory.Inverse => GetBaseCurrency(symbol),
+                    BybitProductCategory.Inverse => GetBaseCurrency(leanSymbol),
                     BybitProductCategory.Spot => GetSpotFeeCurrency(leanSymbol, tradeUpdate),
                     _ => throw new NotSupportedException($"category {tradeUpdate.Category} not implemented")
                 };
@@ -178,7 +178,7 @@ public partial class BybitBrokerage
             return tradeUpdate.Side == OrderSide.Buy ? quote : @base;
         }
 
-        static string GetBaseCurrency(string pair)
+        static string GetBaseCurrency(Symbol pair)
         {
             CurrencyPairUtil.DecomposeCurrencyPair(pair, out var baseCurrency, out _);
             return baseCurrency;

@@ -32,11 +32,6 @@ namespace QuantConnect.BybitBrokerage
     public class BybitBrokerageFactory : BrokerageFactory
     {
         /// <summary>
-        /// The default order book depth for this brokerage
-        /// </summary>
-        protected virtual int DefaultOrderBookDepth => 50;
-
-        /// <summary>
         /// Gets the brokerage data required to run the brokerage from configuration/disk
         /// </summary>
         /// <remarks>
@@ -101,12 +96,30 @@ namespace QuantConnect.BybitBrokerage
             var aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
                 forceTypeNameOnExisting: false);
-            var brokerage = new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel);
+            var brokerage = CreateBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel); 
             Composer.Instance.AddPart<IDataQueueHandler>(brokerage);
 
             return brokerage;
         }
 
+        /// <summary>
+        /// Creates a new BybitBrokerage instance
+        /// </summary>
+        /// <param name="apiKey">The api key</param>
+        /// <param name="apiSecret">The api secret</param>
+        /// <param name="apiUrl">The rest api url</param>
+        /// <param name="wsUrl">The web socket base url</param>
+        /// <param name="algorithm">The algorithm instance is required to retrieve account type</param>
+        /// <param name="aggregator">The aggregator for consolidating ticks</param>
+        /// <param name="job">The live job packet</param>
+        /// <param name="vipLevel">Bybit VIP level</param>
+        /// <returns>New BybitBrokerage instance</returns>
+        protected virtual BybitBrokerage CreateBrokerage(string apiKey, string apiSecret, string apiUrl, string wsUrl,
+            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, BybitVIPLevel vipLevel)
+        {
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, wsUrl, algorithm, aggregator, job, vipLevel); 
+        }
+        
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
