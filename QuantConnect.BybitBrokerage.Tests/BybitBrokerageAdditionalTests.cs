@@ -55,7 +55,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitBrokerageModel());
             algorithm.Setup(a => a.Portfolio)
                 .Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
@@ -95,7 +95,7 @@ namespace QuantConnect.BybitBrokerage.Tests
 
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BybitBrokerageModel());
             algorithm.Setup(a => a.Portfolio)
                 .Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
