@@ -45,19 +45,6 @@ public partial class BybitBrokerage
                     {
                         var symbol = _symbolMapper.GetLeanSymbol(bybitOrder.Symbol, GetSecurityType(category), MarketName);
                         var price = bybitOrder.Price!.Value;
-                        // Bybit does not have a direct option for placing
-                        // Stop Orders To create one, we place a TP/SL order
-                        // that triggers a market order when the trigger price
-                        // is reached. Therefore, since Bybit API returns 0
-                        // as price for Stop Orders, we instead take the trigger
-                        // price.
-                        if (bybitOrder.OrderType == OrderType.Market &&
-                            (bybitOrder.StopOrderType == StopOrderType.TpSlOrder || bybitOrder.StopOrderType == StopOrderType.Stop) &&
-                            bybitOrder.TriggerPrice!.Value != null)
-                        {
-                            price = bybitOrder.TriggerPrice!.Value;
-                            bybitOrder.Price = price;
-                        }
 
                         // Set the correct sign of the quantity
                         if (bybitOrder.Side == OrderSide.Sell && bybitOrder.Quantity > 0)
@@ -73,9 +60,15 @@ public partial class BybitBrokerage
                                 throw new NotSupportedException();
                             }
 
+                            // Bybit does not have a direct option for placing
+                            // Stop Orders To create one, we place a TP/SL order
+                            // that triggers a market order when the trigger price
+                            // is reached. Therefore, since Bybit API returns 0
+                            // as price for Stop Orders, we instead take the trigger
+                            // price.
                             order = bybitOrder.OrderType == OrderType.Limit
                                 ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.Price!.Value, bybitOrder.CreateTime)
-                                : new StopMarketOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime);
+                                : new StopMarketOrder(symbol, bybitOrder.Quantity, bybitOrder.TriggerPrice!.Value, bybitOrder.CreateTime);
                         }
                         else
                         {
