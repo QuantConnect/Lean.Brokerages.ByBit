@@ -67,7 +67,7 @@ public partial class BybitBrokerage
                             // as price for Stop Orders, we instead take the trigger
                             // price.
                             order = bybitOrder.OrderType == OrderType.Limit
-                                ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.Price!.Value, bybitOrder.CreateTime)
+                                ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.TriggerPrice!.Value, bybitOrder.CreateTime)
                                 : new StopMarketOrder(symbol, bybitOrder.Quantity, bybitOrder.TriggerPrice!.Value, bybitOrder.CreateTime);
                         }
                         else
