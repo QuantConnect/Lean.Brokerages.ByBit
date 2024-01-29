@@ -40,35 +40,48 @@ public partial class BybitBrokerage
         var orders = new List<Order>();
         foreach (var category in SupportedBybitProductCategories)
         {
-            orders.AddRange(ApiClient.Trade.GetOpenOrders(category)
-                .Select(bybitOrder =>
-                {
-                    var symbol = _symbolMapper.GetLeanSymbol(bybitOrder.Symbol, GetSecurityType(category), MarketName);
-                    var price = bybitOrder.Price!.Value;
-                    Order order;
-                    if (bybitOrder.StopOrderType != null)
+                orders.AddRange(ApiClient.Trade.GetOpenOrders(category)
+                    .Select(bybitOrder =>
                     {
-                        if (bybitOrder.StopOrderType == StopOrderType.TrailingStop)
+                        var symbol = _symbolMapper.GetLeanSymbol(bybitOrder.Symbol, GetSecurityType(category), MarketName);
+                        var price = bybitOrder.Price!.Value;
+
+                        // Set the correct sign of the quantity
+                        if (bybitOrder.Side == OrderSide.Sell && bybitOrder.Quantity > 0)
                         {
-                            throw new NotSupportedException();
+                            bybitOrder.Quantity *= -1;
                         }
 
-                        order = bybitOrder.OrderType == OrderType.Limit
-                            ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.Price!.Value, bybitOrder.CreateTime)
-                            : new StopMarketOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime);
-                    }
-                    else
-                    {
-                        order = bybitOrder.OrderType == OrderType.Limit
-                            ? new LimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime)
-                            : new MarketOrder(symbol, bybitOrder.Quantity, bybitOrder.CreateTime);
-                    }
+                        Order order;
+                        if (bybitOrder.StopOrderType != null)
+                        {
+                            if (bybitOrder.StopOrderType == StopOrderType.TrailingStop)
+                            {
+                                throw new NotSupportedException();
+                            }
 
-                    order.BrokerId.Add(bybitOrder.OrderId);
-                    order.Status = ConvertOrderStatus(bybitOrder.Status);
-                    return order;
-                }));
-        }
+                            // Bybit does not have a direct option for placing
+                            // Stop Orders To create one, we place a TP/SL order
+                            // that triggers a market order when the trigger price
+                            // is reached. Therefore, since Bybit API returns 0
+                            // as price for Stop Orders, we instead take the trigger
+                            // price.
+                            order = bybitOrder.OrderType == OrderType.Limit
+                                ? new StopLimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.TriggerPrice!.Value, bybitOrder.CreateTime)
+                                : new StopMarketOrder(symbol, bybitOrder.Quantity, bybitOrder.TriggerPrice!.Value, bybitOrder.CreateTime);
+                        }
+                        else
+                        {
+                            order = bybitOrder.OrderType == OrderType.Limit
+                                ? new LimitOrder(symbol, bybitOrder.Quantity, price, bybitOrder.CreateTime)
+                                : new MarketOrder(symbol, bybitOrder.Quantity, bybitOrder.CreateTime);
+                        }
+
+                        order.BrokerId.Add(bybitOrder.OrderId);
+                        order.Status = ConvertOrderStatus(bybitOrder.Status);
+                        return order;
+                    }));
+            }
 
         return orders;
     }
