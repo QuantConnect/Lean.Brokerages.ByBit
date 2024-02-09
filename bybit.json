@@ -1,0 +1,17 @@
+{
+	"description": "ByBit is a Singapore domiciled cryptocurrency exchange. The integration with QuantConnect supports cryptocurrency spot and futures trading, four orders types, and both cash and margin trading.",
+	
+	"platforms-features": [
+		{
+			"Platforms": ["Cloud Platform", "Local Platform", "LEAN CLI"],
+			"Download Data": [1,1,1],
+			"Backtesting": [1,1,1],
+			"Optimization": [1,1,1],
+			"Live Trading":	[1,1,1]
+		}
+	],
+	"order-types": ["Market", "Limit", "Stop Market", "Stop Limit"],
+	"assets": ["Crypto Spot", "Crypto Futures"], 
+	"brokerage-url": "https://www.bybit.com/en/",
+	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/bybit"
+}
