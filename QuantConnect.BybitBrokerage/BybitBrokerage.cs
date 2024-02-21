@@ -209,6 +209,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             return;
         }
 
+        ValidateSubscription();
+
         _privateWebSocketUrl = $"{baseWssUrl}/v5/private";
         var basePublicWebSocketUrl = $"{baseWssUrl}/v5/public";
 
@@ -266,8 +268,6 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 return client;
             });
         }
-
-        ValidateSubscription();
     }
 
     private Dictionary<Symbol, int> FetchSymbolWeights(BybitApi client, BybitProductCategory category)
@@ -503,10 +503,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         try
         {
-            var productId = 305;
-            var userId = Config.GetInt("job-user-id");
-            var token = Config.Get("api-access-token");
-            var organizationId = Config.Get("job-organization-id", null);
+            const int productId = 305;
+            var userId = Globals.UserId;
+            var token = Globals.UserToken;
+            var organizationId = Globals.OrganizationID;
             // Verify we can authenticate with this user and token
             var api = new ApiConnection(userId, token);
             if (!api.Connected)
@@ -517,10 +517,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
             var information = new Dictionary<string, object>()
                 {
                     {"productId", productId},
-                    {"machineName", System.Environment.MachineName},
-                    {"userName", System.Environment.UserName},
-                    {"domainName", System.Environment.UserDomainName},
-                    {"os", System.Environment.OSVersion}
+                    {"machineName", Environment.MachineName},
+                    {"userName", Environment.UserName},
+                    {"domainName", Environment.UserDomainName},
+                    {"os", Environment.OSVersion}
                 };
             // IP and Mac Address Information
             try
