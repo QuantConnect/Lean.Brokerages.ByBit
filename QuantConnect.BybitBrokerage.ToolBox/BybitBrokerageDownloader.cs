@@ -145,6 +145,10 @@ namespace QuantConnect.BybitBrokerage.ToolBox
                     // Download the data
                     var symbol = downloader.GetSymbol(ticker, securityTypeEnum);
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate, tickType: tickTypeEnum));
+                    if (data == null)
+                    {
+                        continue;
+                    }
 
                     // todo how to write open interest data
                     // Save the data (single resolution)
