@@ -63,25 +63,16 @@ namespace QuantConnect.BybitBrokerage.Tests
             }
         }
 
-        private static TestCaseData[] NoHistory
-        {
-            get
-            {
-                return new[]
-                {
-                    // invalid period, no error, empty result
-                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
-                };
-            }
-        }
-
         private static TestCaseData[] InvalidHistory
         {
             get
             {
                 return new[]
                 {
-                    // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
+                    // invalid period
+                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
+
+                    // invalid symbol
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily,
                         TimeSpan.FromDays(15), TickType.Trade),
 
@@ -109,25 +100,18 @@ namespace QuantConnect.BybitBrokerage.Tests
         [TestCaseSource(nameof(ValidHistory))]
         public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
-            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, false, false);
-        }
-
-        [Test]
-        [TestCaseSource(nameof(NoHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
-        {
-            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, true, false);
+            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, false);
         }
 
         [Test]
         [TestCaseSource(nameof(InvalidHistory))]
         public virtual void ReturnsNullOnInvalidHistoryRequest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
-            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, false, true);
+            BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, true);
         }
 
         protected static void BaseHistoryTest(Brokerage brokerage, Symbol symbol, Resolution resolution,
-            TimeSpan period, TickType tickType, bool emptyData, bool invalidRequest)
+            TimeSpan period, TickType tickType, bool invalidRequest)
         {
             var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
 
@@ -173,42 +157,35 @@ namespace QuantConnect.BybitBrokerage.Tests
                 }
             }
 
-            if (emptyData)
+            Assert.Greater(history.Count, 0);
+
+            // Ordered by time
+            Assert.That(history, Is.Ordered.By("Time"));
+
+            var timesArray = history.Select(x => x.Time).ToArray();
+            if (resolution != Resolution.Tick)
             {
-                Assert.IsEmpty(history);
+                // No repeating bars
+                Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
             }
-            else
+
+            foreach (var data in history)
             {
-                Assert.Greater(history.Count, 0);
+                Assert.AreEqual(symbol, data.Symbol);
 
-                // Ordered by time
-                Assert.That(history, Is.Ordered.By("Time"));
-
-                var timesArray = history.Select(x => x.Time).ToArray();
-                if (resolution != Resolution.Tick)
+                if (data.DataType != MarketDataType.Tick)
                 {
-                    // No repeating bars
-                    Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
+                    Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
                 }
+            }
 
-                foreach (var data in history)
+            // No missing bars
+            if (resolution != Resolution.Tick && history.Count >= 2)
+            {
+                var diff = resolution.ToTimeSpan();
+                for (var i = 1; i < timesArray.Length; i++)
                 {
-                    Assert.AreEqual(symbol, data.Symbol);
-
-                    if (data.DataType != MarketDataType.Tick)
-                    {
-                        Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
-                    }
-                }
-
-                // No missing bars
-                if (resolution != Resolution.Tick && history.Count >= 2)
-                {
-                    var diff = resolution.ToTimeSpan();
-                    for (var i = 1; i < timesArray.Length; i++)
-                    {
-                        Assert.AreEqual(diff, timesArray[i] - timesArray[i - 1]);
-                    }
+                    Assert.AreEqual(diff, timesArray[i] - timesArray[i - 1]);
                 }
             }
 

@@ -67,6 +67,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private bool _unsupportedResolutionHistoryLogged;
     private bool _unsupportedTickTypeHistoryLogged;
     private bool _unsupportedResolutionOpenInterestHistoryLogged;
+    private bool _invalidTimeRangeHistoryLogged;
 
     /// <summary>
     /// Order provider
@@ -179,6 +180,18 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 _unsupportedTickTypeHistoryLogged = true;
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
                     $"{request.TickType} tick type not supported, no history returned"));
+            }
+
+            return null;
+        }
+
+        if (request.StartTimeUtc >= request.EndTimeUtc)
+        {
+            if (!_invalidTimeRangeHistoryLogged)
+            {
+                _invalidTimeRangeHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidDateRange",
+                    "The history request start date must precede the end date, no history returned"));
             }
 
             return null;
