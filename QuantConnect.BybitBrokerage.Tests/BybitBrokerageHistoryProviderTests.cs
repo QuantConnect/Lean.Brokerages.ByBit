@@ -24,7 +24,6 @@ using QuantConnect.Logging;
 using QuantConnect.Securities;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Lean.Engine.HistoricalData;
 
 namespace QuantConnect.BybitBrokerage.Tests
 {
@@ -51,6 +50,8 @@ namespace QuantConnect.BybitBrokerage.Tests
         {
             get
             {
+                TestGlobals.Initialize();
+
                 return new[]
                 {
                     // valid
@@ -62,39 +63,38 @@ namespace QuantConnect.BybitBrokerage.Tests
             }
         }
 
-        private static TestCaseData[] NoHistory
-        {
-            get
-            {
-                return new[]
-                {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Bybit),
-                        Resolution.Minute, Time.OneHour, TickType.Quote),
-                };
-            }
-        }
-
         private static TestCaseData[] InvalidHistory
         {
             get
             {
                 return new[]
                 {
-                    // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
+                    // invalid period
+                    new TestCaseData(ETHUSDT, Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
 
-                    // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
+                    // invalid symbol
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Bybit), Resolution.Daily,
                         TimeSpan.FromDays(15), TickType.Trade),
 
                     //invalid security type
                     new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade),
+
+                    // invalid resolution
+                    new TestCaseData(ETHUSDT, Resolution.Second, Time.OneMinute, TickType.Trade),
+
+                    // invalid tick type
+                    new TestCaseData(ETHUSDT, Resolution.Minute, Time.OneHour, TickType.Quote),
+
+                    // invalid market
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute,
+                        Time.OneMinute, TickType.Trade),
+
+                    // invalid resolution for tick type
+                    new TestCaseData(ETHUSDT, Resolution.Tick, TimeSpan.FromDays(15), TickType.OpenInterest),
+                    new TestCaseData(ETHUSDT, Resolution.Minute, TimeSpan.FromDays(15), TickType.OpenInterest),
                 };
             }
         }
-
 
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
@@ -104,104 +104,92 @@ namespace QuantConnect.BybitBrokerage.Tests
         }
 
         [Test]
-        [TestCaseSource(nameof(NoHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
+        public virtual void ReturnsNullOnInvalidHistoryRequest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
             BaseHistoryTest(_brokerage, symbol, resolution, period, tickType, true);
         }
 
         protected static void BaseHistoryTest(Brokerage brokerage, Symbol symbol, Resolution resolution,
-            TimeSpan period, TickType tickType, bool emptyData)
+            TimeSpan period, TickType tickType, bool invalidRequest)
         {
-            var historyProvider = new BrokerageHistoryProvider();
-            historyProvider.SetBrokerage(brokerage);
-            historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
-                null, null, null, null,
-                false, new DataPermissionManager(), null));
-
             var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
 
             var now = DateTime.UtcNow.AddDays(-1);
-            var requests = new[]
-            {
-                new HistoryRequest(now.Add(-period),
-                    now,
-                    resolution == Resolution.Tick ? typeof(Tick) : typeof(TradeBar),
-                    symbol,
-                    resolution,
-                    marketHoursDatabase.GetExchangeHours(symbol.ID.Market, symbol, symbol.SecurityType),
-                    marketHoursDatabase.GetDataTimeZone(symbol.ID.Market, symbol, symbol.SecurityType),
-                    resolution,
-                    false,
-                    false,
-                    DataNormalizationMode.Adjusted,
-                    tickType)
-            };
+            var request = new HistoryRequest(now.Add(-period),
+                now,
+                resolution == Resolution.Tick ? typeof(Tick) : typeof(TradeBar),
+                symbol,
+                resolution,
+                marketHoursDatabase.GetExchangeHours(symbol.ID.Market, symbol, symbol.SecurityType),
+                marketHoursDatabase.GetDataTimeZone(symbol.ID.Market, symbol, symbol.SecurityType),
+                resolution,
+                false,
+                false,
+                DataNormalizationMode.Adjusted,
+                tickType);
 
-            var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc).ToArray();
-            foreach (var slice in historyArray)
+            var history = brokerage.GetHistory(request)?.ToList();
+
+            if (invalidRequest)
             {
-                if (resolution == Resolution.Tick)
+                Assert.IsNull(history);
+                return;
+            }
+
+            Assert.IsNotNull(history);
+
+            foreach (var data in history)
+            {
+                if (data is Tick tick)
                 {
-                    foreach (var tick in slice.Ticks[symbol])
-                    {
-                        Log.Trace("{0}: {1} - {2} / {3}", tick.Time.ToStringInvariant("yyyy-MM-dd HH:mm:ss.fff"),
-                            tick.Symbol, tick.BidPrice, tick.AskPrice);
-                    }
+                    Log.Trace("{0}: {1} - {2} / {3}", tick.Time.ToStringInvariant("yyyy-MM-dd HH:mm:ss.fff"),
+                        tick.Symbol, tick.BidPrice, tick.AskPrice);
                 }
-                else if (slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
+                else if (data is QuoteBar quoteBar)
                 {
                     Log.Trace($"QuoteBar: {quoteBar}");
                 }
-                else if (slice.Bars.TryGetValue(symbol, out var bar))
+                else if (data is TradeBar bar)
                 {
                     Log.Trace("{0}: {1} - O={2}, H={3}, L={4}, C={5}", bar.Time, bar.Symbol, bar.Open, bar.High,
                         bar.Low, bar.Close);
                 }
             }
 
-            if (emptyData)
-            {
-                Assert.Zero(historyProvider.DataPointCount);
-            }
-            else
-            {
-                Assert.Greater(historyProvider.DataPointCount, 0);
-            }
+            Assert.Greater(history.Count, 0);
 
-            if (historyProvider.DataPointCount > 0)
-            {
-                // Ordered by time
-                Assert.That(historyArray, Is.Ordered.By("Time"));
+            // Ordered by time
+            Assert.That(history, Is.Ordered.By("Time"));
 
+            var timesArray = history.Select(x => x.Time).ToArray();
+            if (resolution != Resolution.Tick)
+            {
                 // No repeating bars
-                var timesArray = historyArray.Select(x => x.Time).ToArray();
                 Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
+            }
 
-                foreach (var slice in historyArray)
+            foreach (var data in history)
+            {
+                Assert.AreEqual(symbol, data.Symbol);
+
+                if (data.DataType != MarketDataType.Tick)
                 {
-                    var data = slice.AllData[0];
-                    Assert.AreEqual(symbol, data.Symbol);
-
-                    if (data.DataType != MarketDataType.Tick)
-                    {
-                        Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
-                    }
-                }
-
-                // No missing bars
-                if (resolution != Resolution.Tick && historyProvider.DataPointCount >= 2)
-                {
-                    var diff = resolution.ToTimeSpan();
-                    for (var i = 1; i < timesArray.Length; i++)
-                    {
-                        Assert.AreEqual(diff, timesArray[i] - timesArray[i - 1]);
-                    }
+                    Assert.AreEqual(resolution.ToTimeSpan(), data.EndTime - data.Time);
                 }
             }
 
-            Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
+            // No missing bars
+            if (resolution != Resolution.Tick && history.Count >= 2)
+            {
+                var diff = resolution.ToTimeSpan();
+                for (var i = 1; i < timesArray.Length; i++)
+                {
+                    Assert.AreEqual(diff, timesArray[i] - timesArray[i - 1]);
+                }
+            }
+
+            Log.Trace("Data points retrieved: " + history.Count);
         }
 
         private Brokerage CreateBrokerage()

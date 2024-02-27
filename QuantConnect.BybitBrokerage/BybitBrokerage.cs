@@ -63,6 +63,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     private Lazy<BybitApi> _apiClientLazy;
     private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
+    private bool _unsupportedAssetHistoryLogged;
+    private bool _unsupportedResolutionHistoryLogged;
+    private bool _unsupportedTickTypeHistoryLogged;
+    private bool _unsupportedResolutionOpenInterestHistoryLogged;
+    private bool _invalidTimeRangeHistoryLogged;
+
     /// <summary>
     /// Order provider
     /// </summary>
@@ -143,32 +149,52 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <returns>An enumerable of bars or ticks covering the span specified in the request</returns>
     public override IEnumerable<BaseData> GetHistory(HistoryRequest request)
     {
-        if (!_symbolMapper.IsKnownLeanSymbol(request.Symbol))
+        if (!CanSubscribe(request.Symbol))
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSymbol",
-                $"Unknown symbol: {request.Symbol.Value}, no history returned"));
-            return Array.Empty<BaseData>();
+            if (!_unsupportedAssetHistoryLogged)
+            {
+                _unsupportedAssetHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSymbol",
+                    $"Invalid symbol: {request.Symbol.Value}, no history returned"));
+            }
+
+            return null;
         }
 
         if (request.Resolution == Resolution.Second)
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
-                $"{request.Resolution} resolution is not supported, no history returned"));
-            return Array.Empty<BaseData>();
+            if (!_unsupportedResolutionHistoryLogged)
+            {
+                _unsupportedResolutionHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
+                    $"{request.Resolution} resolution is not supported, no history returned"));
+            }
+
+            return null;
         }
 
         if (request.TickType is not (TickType.OpenInterest or TickType.Trade))
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
-                $"{request.TickType} tick type not supported, no history returned"));
-            return Array.Empty<BaseData>();
+            if (!_unsupportedTickTypeHistoryLogged)
+            {
+                _unsupportedTickTypeHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
+                    $"{request.TickType} tick type not supported, no history returned"));
+            }
+
+            return null;
         }
 
-        if (!IsSupported(request.Symbol))
+        if (request.StartTimeUtc >= request.EndTimeUtc)
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSecurityType",
-                $"{request.Symbol.SecurityType} security type not supported, no history returned"));
-            return Array.Empty<BaseData>();
+            if (!_invalidTimeRangeHistoryLogged)
+            {
+                _invalidTimeRangeHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidDateRange",
+                    "The history request start date must precede the end date, no history returned"));
+            }
+
+            return null;
         }
 
         var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
@@ -303,7 +329,10 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
     protected virtual bool CanSubscribe(Symbol symbol)
     {
-        var baseCanSubscribe = !symbol.Value.Contains("UNIVERSE") && IsSupported(symbol) && symbol.ID.Market == MarketName;
+        var baseCanSubscribe = !symbol.Value.Contains("UNIVERSE") &&
+            IsSupported(symbol) &&
+            symbol.ID.Market == MarketName &&
+            _symbolMapper.IsKnownLeanSymbol(symbol);
 
         if (baseCanSubscribe && symbol.SecurityType == SecurityType.CryptoFuture)
         {
@@ -387,11 +416,21 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         if (request.Resolution is not (Resolution.Hour or Resolution.Daily))
         {
-            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
-                $"Only hourly and daily resolutions are supported for open interest history. No history returned"));
-            yield break;
+            if (!_unsupportedResolutionOpenInterestHistoryLogged)
+            {
+                _unsupportedResolutionOpenInterestHistoryLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
+                    $"Only hourly and daily resolutions are supported for open interest history. No history returned"));
+            }
+
+            return null;
         }
 
+        return GetOpenInterestHistoryImpl(brokerageSymbol, request);
+    }
+
+    private IEnumerable<OpenInterest> GetOpenInterestHistoryImpl(string brokerageSymbol, HistoryRequest request)
+    {
         var usingTempClient = MakeTempApiClient(
             () => GetApiClient(_symbolMapper, null, Config.Get("bybit-api-url", "https://api.bybit.com"), null, null, BybitVIPLevel.VIP0),
             out var client);

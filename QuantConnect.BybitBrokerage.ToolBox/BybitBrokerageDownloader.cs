@@ -65,17 +65,6 @@ namespace QuantConnect.BybitBrokerage.ToolBox
             var endUtc = dataDownloaderGetParameters.EndUtc;
             var tickType = dataDownloaderGetParameters.TickType;
 
-            if (tickType is not (TickType.Trade or TickType.OpenInterest))
-            {
-                return Enumerable.Empty<BaseData>();
-            }
-
-            if (!_symbolMapper.IsKnownLeanSymbol(symbol))
-                throw new ArgumentException($"The ticker {symbol.Value} is not available.");
-
-            if (endUtc < startUtc)
-                throw new ArgumentException("The end date must be greater or equal than the start date.");
-
             var historyRequest = new HistoryRequest(
                 startUtc,
                 endUtc,
@@ -91,8 +80,7 @@ namespace QuantConnect.BybitBrokerage.ToolBox
                 tickType);
 
             var brokerage = CreateBrokerage();
-            var data = brokerage.GetHistory(historyRequest);
-            return data;
+            return brokerage.GetHistory(historyRequest);
         }
 
         /// <summary>
@@ -145,6 +133,10 @@ namespace QuantConnect.BybitBrokerage.ToolBox
                     // Download the data
                     var symbol = downloader.GetSymbol(ticker, securityTypeEnum);
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate, tickType: tickTypeEnum));
+                    if (data == null)
+                    {
+                        continue;
+                    }
 
                     // todo how to write open interest data
                     // Save the data (single resolution)
