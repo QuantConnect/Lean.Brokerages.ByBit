@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NodaTime;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
@@ -25,7 +24,7 @@ using QuantConnect.Logging;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 
-namespace QuantConnect.BybitBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Bybit.ToolBox
 {
     /// <summary>
     /// Template Brokerage Data Downloader implementation

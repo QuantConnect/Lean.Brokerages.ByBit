@@ -16,7 +16,7 @@
 using System;
 using NUnit.Framework;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public class BybitFuturesBrokerageHistoryProviderTests : BybitBrokerageHistoryProviderTests

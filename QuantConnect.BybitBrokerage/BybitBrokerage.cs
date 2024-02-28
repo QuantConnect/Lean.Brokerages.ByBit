@@ -25,9 +25,8 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Runtime.CompilerServices;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Api;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Api;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
@@ -40,7 +39,7 @@ using RestSharp;
 using HistoryRequest = QuantConnect.Data.HistoryRequest;
 using OrderStatus = QuantConnect.Orders.OrderStatus;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.Brokerages.Bybit;
 
 /// <summary>
 /// Bybit brokerage implementation

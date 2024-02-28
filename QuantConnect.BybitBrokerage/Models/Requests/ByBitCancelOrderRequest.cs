@@ -13,9 +13,9 @@
  * limitations under the License.
 */
 
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 
-namespace QuantConnect.BybitBrokerage.Models.Requests;
+namespace QuantConnect.Brokerages.Bybit.Models.Requests;
 
 /// <summary>
 /// Bybit cancel order api request

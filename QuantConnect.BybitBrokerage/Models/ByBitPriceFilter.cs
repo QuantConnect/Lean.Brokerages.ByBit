@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BybitBrokerage.Models;
+namespace QuantConnect.Brokerages.Bybit.Models;
 
 /// <summary>
 /// Bybit instrument price attributes

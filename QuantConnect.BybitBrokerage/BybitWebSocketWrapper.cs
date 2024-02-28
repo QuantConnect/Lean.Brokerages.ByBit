@@ -15,9 +15,8 @@
 
 using System;
 using System.Timers;
-using QuantConnect.Brokerages;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.Brokerages.Bybit;
 
 /// <summary>
 /// Wrapper class for a Bybit websocket connection

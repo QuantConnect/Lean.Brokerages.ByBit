@@ -16,7 +16,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage.Converters;
+namespace QuantConnect.Brokerages.Bybit.Converters;
 
 /// <summary>
 /// JSON converter to convert Bybits candle time representation

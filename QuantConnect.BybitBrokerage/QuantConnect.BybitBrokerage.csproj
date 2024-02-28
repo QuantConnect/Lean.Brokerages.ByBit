@@ -3,27 +3,27 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <TargetFramework>net6.0</TargetFramework>
-    <Product>QuantConnect.BybitBrokerage</Product>
-    <RootNamespace>QuantConnect.BybitBrokerage</RootNamespace>
-    <AssemblyTitle>QuantConnect.BybitBrokerage</AssemblyTitle>
-    <AssemblyName>QuantConnect.BybitBrokerage</AssemblyName>
+    <Product>QuantConnect.Brokerages.Bybit</Product>
+    <RootNamespace>QuantConnect.Brokerages.Bybit</RootNamespace>
+    <AssemblyTitle>QuantConnect.Brokerages.Bybit</AssemblyTitle>
+    <AssemblyName>QuantConnect.Brokerages.Bybit</AssemblyName>
     <OutputType>Library</OutputType>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Description>QuantConnect LEAN Bybit Brokerage: Bybit Brokerage plugin for Lean</Description>
-    <PackageId>QuantConnect.BybitBrokerage</PackageId>
+    <PackageId>QuantConnect.Brokerages.Bybit</PackageId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
     <OutputPath>bin\Debug\</OutputPath>
-    <DocumentationFile>bin\Debug\QuantConnect.BybitBrokerage.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\QuantConnect.Brokerages.Bybit.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>bin\Release\QuantConnect.BybitBrokerage.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\QuantConnect.Brokerages.Bybit.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Lean\Common\Properties\SharedAssemblyInfo.cs" Link="Properties\SharedAssemblyInfo.cs" />

@@ -16,15 +16,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using OrderStatus = QuantConnect.Orders.OrderStatus;
-using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
+using OrderType = QuantConnect.Brokerages.Bybit.Models.Enums.OrderType;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.Brokerages.Bybit;
 
 public partial class BybitBrokerage
 {

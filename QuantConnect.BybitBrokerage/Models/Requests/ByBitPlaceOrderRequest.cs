@@ -14,10 +14,10 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.BybitBrokerage.Converters;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Converters;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 
-namespace QuantConnect.BybitBrokerage.Models.Requests;
+namespace QuantConnect.Brokerages.Bybit.Models.Requests;
 
 /// <summary>
 /// Bybit place order api request

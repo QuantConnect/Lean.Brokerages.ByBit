@@ -17,9 +17,9 @@ using System;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using QuantConnect.BybitBrokerage.Models;
+using QuantConnect.Brokerages.Bybit.Models;
 
-namespace QuantConnect.BybitBrokerage.Converters;
+namespace QuantConnect.Brokerages.Bybit.Converters;
 
 /// <summary>
 /// JSON converter to convert Bybit order book rows

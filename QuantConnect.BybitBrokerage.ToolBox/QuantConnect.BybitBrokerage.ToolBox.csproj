@@ -7,15 +7,15 @@
         <TargetFramework>net6.0</TargetFramework>
         <Copyright>Copyright ©  2021</Copyright>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Product>QuantConnect.BybitBrokerage.ToolBox</Product>
-        <RootNamespace>QuantConnect.BybitBrokerage.ToolBox</RootNamespace>
-        <AssemblyTitle>QuantConnect.BybitBrokerage.ToolBox</AssemblyTitle>
-        <AssemblyName>QuantConnect.BybitBrokerage.ToolBox</AssemblyName>
+        <Product>QuantConnect.Brokerages.Bybit.ToolBox</Product>
+        <RootNamespace>QuantConnect.Brokerages.Bybit.ToolBox</RootNamespace>
+        <AssemblyTitle>QuantConnect.Brokerages.Bybit.ToolBox</AssemblyTitle>
+        <AssemblyName>QuantConnect.Brokerages.Bybit.ToolBox</AssemblyName>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <Description>QuantConnect LEAN Bybit Brokerage: Bybit Brokerage toolbox plugin for Lean</Description>
-        <PackageId>QuantConnect.BybitBrokerage.ToolBox</PackageId>
+        <PackageId>QuantConnect.Brokerages.Bybit.ToolBox</PackageId>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>full</DebugType>

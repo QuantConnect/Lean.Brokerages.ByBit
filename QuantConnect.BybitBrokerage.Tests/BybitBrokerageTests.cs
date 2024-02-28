@@ -18,9 +18,8 @@ using System.Linq;
 using System.Threading;
 using Moq;
 using NUnit.Framework;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Api;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Api;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
@@ -31,7 +30,7 @@ using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
 using QuantConnect.Util;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public partial class BybitBrokerageTests : BrokerageTests

@@ -15,9 +15,9 @@
 
 using System;
 using Newtonsoft.Json;
-using QuantConnect.BybitBrokerage.Converters;
+using QuantConnect.Brokerages.Bybit.Converters;
 
-namespace QuantConnect.BybitBrokerage.Models;
+namespace QuantConnect.Brokerages.Bybit.Models;
 
 /// <summary>
 /// Ticker info

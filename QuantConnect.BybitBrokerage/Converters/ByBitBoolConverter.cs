@@ -16,7 +16,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage.Converters;
+namespace QuantConnect.Brokerages.Bybit.Converters;
 
 /// <summary>
 /// Json converter to support Bybits various bool return types

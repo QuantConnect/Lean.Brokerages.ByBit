@@ -15,7 +15,7 @@
 
 using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage.Models;
+namespace QuantConnect.Brokerages.Bybit.Models;
 
 /// <summary>
 /// Bybit order book update

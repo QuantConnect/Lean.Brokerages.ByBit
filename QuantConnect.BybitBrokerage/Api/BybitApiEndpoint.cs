@@ -21,15 +21,14 @@ using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Converters;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Converters;
+using QuantConnect.Brokerages.Bybit.Models;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
 using RestSharp;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Base Bybit api endpoint implementation

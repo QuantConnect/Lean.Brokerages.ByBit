@@ -14,11 +14,10 @@
 */
 
 using NUnit.Framework;
-using QuantConnect.BybitBrokerage.Models.Enums;
-using QuantConnect.Orders.Fees;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Tests.Brokerages;
 
-namespace QuantConnect.BybitBrokerage.Tests;
+namespace QuantConnect.Brokerages.Bybit.Tests;
 
 [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
 public partial class BybitFuturesBrokerageTests : BybitBrokerageTests

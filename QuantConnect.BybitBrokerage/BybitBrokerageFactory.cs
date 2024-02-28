@@ -15,8 +15,7 @@
 
 using System;
 using System.Collections.Generic;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
@@ -24,7 +23,7 @@ using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 
-namespace QuantConnect.BybitBrokerage
+namespace QuantConnect.Brokerages.Bybit
 {
     /// <summary>
     /// Factory method to create Bybit brokerage

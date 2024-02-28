@@ -16,7 +16,6 @@
 using System;
 using System.Linq;
 using NUnit.Framework;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Tests;
@@ -25,7 +24,7 @@ using QuantConnect.Securities;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.DataFeeds;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture, Explicit("Requires valid credentials to be setup and run outside USA")]
     public class BybitBrokerageHistoryProviderTests

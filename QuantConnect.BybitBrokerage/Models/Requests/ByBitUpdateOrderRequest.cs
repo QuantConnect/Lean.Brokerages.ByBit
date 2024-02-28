@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BybitBrokerage.Models.Requests;
+namespace QuantConnect.Brokerages.Bybit.Models.Requests;
 
 /// <summary>
 /// Bybit update order api request

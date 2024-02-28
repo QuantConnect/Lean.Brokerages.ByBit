@@ -16,13 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Packets;
 using QuantConnect.Util;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.Brokerages.Bybit;
 
 public partial class BybitBrokerage
 {
