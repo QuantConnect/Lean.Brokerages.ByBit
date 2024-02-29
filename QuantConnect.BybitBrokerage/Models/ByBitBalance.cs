@@ -16,9 +16,9 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 
-namespace QuantConnect.BybitBrokerage.Models;
+namespace QuantConnect.Brokerages.Bybit.Models;
 
 /// <summary>
 /// Balance info

@@ -14,12 +14,10 @@
 */
 
 using System.Collections.Generic;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models;
 using QuantConnect.Securities;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Bybit account api endpoint implementation

@@ -17,7 +17,7 @@ using System;
 using System.Globalization;
 using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage.Converters;
+namespace QuantConnect.Brokerages.Bybit.Converters;
 
 /// <summary>
 /// Json converter to represent decimals as strings

@@ -15,7 +15,7 @@
 
 using Newtonsoft.Json;
 
-namespace QuantConnect.BybitBrokerage.Models.Messages;
+namespace QuantConnect.Brokerages.Bybit.Models.Messages;
 
 
 /// <summary>

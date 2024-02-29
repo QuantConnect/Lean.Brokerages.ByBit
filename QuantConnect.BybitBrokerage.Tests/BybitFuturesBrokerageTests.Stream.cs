@@ -15,7 +15,7 @@
 
 using NUnit.Framework;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture]
     public partial class BybitFuturesBrokerageTests

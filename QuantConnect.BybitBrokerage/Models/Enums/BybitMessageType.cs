@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BybitBrokerage.Models.Messages;
+namespace QuantConnect.Brokerages.Bybit.Models.Messages;
 
 /// <summary>
 /// Websocket message type

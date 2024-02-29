@@ -21,21 +21,20 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Api;
-using QuantConnect.BybitBrokerage.Converters;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
-using QuantConnect.BybitBrokerage.Models.Messages;
+using QuantConnect.Brokerages.Bybit.Api;
+using QuantConnect.Brokerages.Bybit.Converters;
+using QuantConnect.Brokerages.Bybit.Models;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Messages;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using QuantConnect.Util;
-using OrderStatus = QuantConnect.BybitBrokerage.Models.Enums.OrderStatus;
+using OrderStatus = QuantConnect.Brokerages.Bybit.Models.Enums.OrderStatus;
 
-namespace QuantConnect.BybitBrokerage;
+namespace QuantConnect.Brokerages.Bybit;
 
 public partial class BybitBrokerage
 {

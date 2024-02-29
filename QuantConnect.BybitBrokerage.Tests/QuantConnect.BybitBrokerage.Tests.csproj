@@ -9,11 +9,12 @@
         <Copyright>Copyright ©  2021</Copyright>
         <TestProjectType>UnitTest</TestProjectType>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Product>QuantConnect.BybitBrokerage.Tests</Product>
-        <RootNamespace>QuantConnect.BybitBrokerage.Tests</RootNamespace>
-        <AssemblyTitle>QuantConnect.BybitBrokerage.Tests</AssemblyTitle>
+        <Product>QuantConnect.Brokerages.Bybit.Tests</Product>
+        <RootNamespace>QuantConnect.Brokerages.Bybit.Tests</RootNamespace>
+        <AssemblyTitle>QuantConnect.Brokerages.Bybit.Tests</AssemblyTitle>
+		<AssemblyName>QuantConnect.Brokerages.Bybit.Tests</AssemblyName>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <PackageId>QuantConnect.BybitBrokerage.Tests</PackageId>
+        <PackageId>QuantConnect.Brokerages.Bybit.Tests</PackageId>
     </PropertyGroup>
 
     <ItemGroup>

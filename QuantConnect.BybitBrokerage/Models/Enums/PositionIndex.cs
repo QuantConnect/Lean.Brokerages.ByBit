@@ -15,7 +15,7 @@
 
 using System.Runtime.Serialization;
 
-namespace QuantConnect.BybitBrokerage.Models.Enums;
+namespace QuantConnect.Brokerages.Bybit.Models.Enums;
 
 /// <summary>
 /// Position index, used to identify positions in different position modes

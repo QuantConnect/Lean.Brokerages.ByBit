@@ -16,13 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using QuantConnect.BybitBrokerage.Api;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Api;
+using QuantConnect.Brokerages.Bybit.Models;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
 
-namespace QuantConnect.BybitBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Bybit.ToolBox
 {
     /// <summary>
     /// Template Brokerage implementation of <see cref="IExchangeInfoDownloader"/>
@@ -75,7 +75,7 @@ namespace QuantConnect.BybitBrokerage.ToolBox
         {
             var securityTypeStr = securityType.ToStringInvariant().ToLowerInvariant();
 
-            // Remove multiplier prefix from symbols like 10000LADYSUSDT. Not 1 as there is also 1INCHUSDT 
+            // Remove multiplier prefix from symbols like 10000LADYSUSDT. Not 1 as there is also 1INCHUSDT
             var symbolName = info.Symbol.StartsWith("10") ? info.Symbol.TrimStart('0', '1') : info.Symbol;
 
             // market,symbol,type,description,quote_currency,contract_multiplier,minimum_price_variation,lot_size,market_ticker,minimum_order_size,price_magnifier

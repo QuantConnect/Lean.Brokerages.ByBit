@@ -18,13 +18,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using QuantConnect.BybitBrokerage.Converters;
-using QuantConnect.BybitBrokerage.Models.Enums;
-using QuantConnect.BybitBrokerage.Models.Messages;
+using QuantConnect.Brokerages.Bybit.Converters;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Messages;
 using QuantConnect.Logging;
 using RestSharp;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Implements functionality to download historical tick data from Bybit

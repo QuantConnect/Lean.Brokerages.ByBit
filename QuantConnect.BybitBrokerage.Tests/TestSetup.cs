@@ -20,7 +20,7 @@ using System.Collections;
 using QuantConnect.Logging;
 using QuantConnect.Configuration;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture]
     public class TestSetup

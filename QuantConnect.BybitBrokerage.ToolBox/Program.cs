@@ -14,12 +14,11 @@
 */
 
 using System;
-using System.Collections.Generic;
 using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
 using static QuantConnect.Configuration.ApplicationParser;
 
-namespace QuantConnect.BybitBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Bybit.ToolBox
 {
     static class Program
     {

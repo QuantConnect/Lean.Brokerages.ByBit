@@ -17,10 +17,10 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using NUnit.Framework;
-using QuantConnect.BybitBrokerage.Converters;
-using QuantConnect.BybitBrokerage.Models;
+using QuantConnect.Brokerages.Bybit.Converters;
+using QuantConnect.Brokerages.Bybit.Models;
 
-namespace QuantConnect.BybitBrokerage.Tests.JsonConverters;
+namespace QuantConnect.Brokerages.Bybit.Tests.JsonConverters;
 
 public class JsonConverterTests
 {

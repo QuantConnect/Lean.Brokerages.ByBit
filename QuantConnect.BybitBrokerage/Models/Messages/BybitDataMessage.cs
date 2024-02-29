@@ -15,9 +15,9 @@
 
 using System;
 using Newtonsoft.Json;
-using QuantConnect.BybitBrokerage.Converters;
+using QuantConnect.Brokerages.Bybit.Converters;
 
-namespace QuantConnect.BybitBrokerage.Models.Messages;
+namespace QuantConnect.Brokerages.Bybit.Models.Messages;
 
 /// <summary>
 /// Base websocket data message

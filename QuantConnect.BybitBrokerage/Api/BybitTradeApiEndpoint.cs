@@ -16,16 +16,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
-using QuantConnect.BybitBrokerage.Models.Requests;
+using QuantConnect.Brokerages.Bybit.Models;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models.Requests;
 using QuantConnect.Orders;
 using QuantConnect.Securities;
-using OrderType = QuantConnect.BybitBrokerage.Models.Enums.OrderType;
-using TimeInForce = QuantConnect.BybitBrokerage.Models.Enums.TimeInForce;
+using OrderType = QuantConnect.Brokerages.Bybit.Models.Enums.OrderType;
+using TimeInForce = QuantConnect.Brokerages.Bybit.Models.Enums.TimeInForce;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Bybit trade api endpoint implementation

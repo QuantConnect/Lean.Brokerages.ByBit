@@ -17,7 +17,7 @@ using NUnit.Framework;
 using QuantConnect.Interfaces;
 using QuantConnect.Util;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture]
     public class BybitBrokerageFactoryTests

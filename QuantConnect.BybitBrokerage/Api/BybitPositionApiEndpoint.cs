@@ -15,12 +15,11 @@
 
 using System;
 using System.Collections.Generic;
-using QuantConnect.Brokerages;
-using QuantConnect.BybitBrokerage.Models;
-using QuantConnect.BybitBrokerage.Models.Enums;
+using QuantConnect.Brokerages.Bybit.Models;
+using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Securities;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Bybit position api endpoint implementation

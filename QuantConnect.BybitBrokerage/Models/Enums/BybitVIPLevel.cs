@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BybitBrokerage.Models.Enums;
+namespace QuantConnect.Brokerages.Bybit.Models.Enums;
 
 /// <summary>
 /// Bybit VIP Levels

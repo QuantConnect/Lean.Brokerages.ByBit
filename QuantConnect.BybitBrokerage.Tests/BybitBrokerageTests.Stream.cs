@@ -21,7 +21,7 @@ using QuantConnect.Logging;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
 
-namespace QuantConnect.BybitBrokerage.Tests
+namespace QuantConnect.Brokerages.Bybit.Tests
 {
     [TestFixture]
     public partial class BybitBrokerageTests

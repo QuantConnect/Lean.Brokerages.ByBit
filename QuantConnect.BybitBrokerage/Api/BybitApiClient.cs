@@ -19,11 +19,10 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
 using QuantConnect.Util;
 using RestSharp;
 
-namespace QuantConnect.BybitBrokerage.Api;
+namespace QuantConnect.Brokerages.Bybit.Api;
 
 /// <summary>
 /// Bybit api client implementation

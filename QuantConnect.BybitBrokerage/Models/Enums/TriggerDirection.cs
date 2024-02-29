@@ -15,7 +15,7 @@
 
 using System.Runtime.Serialization;
 
-namespace QuantConnect.BybitBrokerage.Models.Enums;
+namespace QuantConnect.Brokerages.Bybit.Models.Enums;
 
 /// <summary>
 /// Conditional order trigger direction
