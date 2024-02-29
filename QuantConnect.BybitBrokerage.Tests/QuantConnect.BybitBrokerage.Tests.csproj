@@ -12,6 +12,7 @@
         <Product>QuantConnect.Brokerages.Bybit.Tests</Product>
         <RootNamespace>QuantConnect.Brokerages.Bybit.Tests</RootNamespace>
         <AssemblyTitle>QuantConnect.Brokerages.Bybit.Tests</AssemblyTitle>
+		<AssemblyName>QuantConnect.Brokerages.Bybit.Tests</AssemblyName>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <PackageId>QuantConnect.Brokerages.Bybit.Tests</PackageId>
     </PropertyGroup>
