@@ -13,5 +13,26 @@
 	"order-types": ["Market", "Limit", "Stop Market", "Stop Limit"],
 	"assets": ["Crypto Spot", "Crypto Futures"], 
 	"brokerage-url": "https://www.bybit.com/en/",
-	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/bybit"
+	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/bybit",
+	"module-specification": {
+		"download": {
+			"data-types": [
+				"OpenInterest",
+				"Trade"
+			],
+			"resolutions": [
+				"Tick",
+				"Minute",
+				"Hour",
+				"Daily"
+			],
+			"security-types": [
+				"Crypto",
+				"CryptoFuture"
+			],
+			"markets": [
+				"Bybit"
+			]
+		}
+	}
 }
