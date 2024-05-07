@@ -34,6 +34,9 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
         private readonly string _market;
         private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
 
+        public BybitBrokerageDownloader() : this(Market.Bybit)
+        { }
+
         public BybitBrokerageDownloader(string market = Market.Bybit)
         {
             _market = market;
@@ -125,7 +128,7 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
                 //Load settings from config.json
                 var dataDirectory = Config.Get("data-folder", Globals.DataFolder);
 
-                var downloader =  CreateDownloader(securityTypeEnum,market);
+                var downloader = CreateDownloader(securityTypeEnum, market);
 
                 foreach (var ticker in tickers)
                 {
