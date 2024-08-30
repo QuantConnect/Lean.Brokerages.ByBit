@@ -66,6 +66,13 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
                     // Skip USDC perp and future contracts for now, they'll need some more implementation
                     continue;
                 }
+
+                if (symbol.InstrumentInfo.ContractType == "InverseFutures")
+                {
+                    // Skip crypto futures that are not perpetual
+                    continue;
+                }
+
                 yield return GetInstrumentInfoString(symbol.InstrumentInfo, symbol.SecurityType);
             }
         }
