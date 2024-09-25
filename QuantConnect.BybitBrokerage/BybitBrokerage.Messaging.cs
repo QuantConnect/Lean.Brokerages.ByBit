@@ -573,8 +573,7 @@ public partial class BybitBrokerage
     private static bool IsAccountMarginStatusValid(BybitApi api, out BrokerageMessageEvent message)
     {
         var accountInfo = api.Account.GetAccountInfo();
-        if (accountInfo.UnifiedMarginStatus is not (AccountUnifiedMarginStatus.UnifiedTrade
-            or AccountUnifiedMarginStatus.UTAPro))
+        if (accountInfo.UnifiedMarginStatus == AccountUnifiedMarginStatus.ClassicAccount)
         {
             message = new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
                 "Only unified margin trade accounts are supported");
