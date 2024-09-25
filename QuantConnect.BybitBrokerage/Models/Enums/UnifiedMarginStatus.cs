@@ -45,7 +45,7 @@ public enum AccountUnifiedMarginStatus
     /// <remarks>
     /// Uta or uta (pro), they are the same thing, but pro has a slight performance advantage when trading via API
     /// </remarks>
-    [EnumMember(Value = "3")] UTA1Pro = 4,
+    [EnumMember(Value = "4")] UTA1Pro = 4,
 
     /// <summary>
     /// The ultimate version of the unified account, integrating inverse contracts,
