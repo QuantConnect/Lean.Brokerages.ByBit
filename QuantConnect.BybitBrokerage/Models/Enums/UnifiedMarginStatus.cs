@@ -20,25 +20,47 @@ namespace QuantConnect.Brokerages.Bybit.Models.Enums;
 /// <summary>
 /// Bybit account unified margin status
 /// </summary>
+/// <see href="https://bybit-exchange.github.io/docs/v5/acct-mode#determine-account-mode-through-api"/>
 public enum AccountUnifiedMarginStatus
 {
     /// <summary>
-    /// Regular account
+    /// Contract transactions and spot transactions are separated
     /// </summary>
-    [EnumMember(Value = "1")] Regular = 1,
+    [EnumMember(Value = "1")] ClassicAccount = 1,
 
     /// <summary>
-    /// Unified margin account, it only trades linear perpetual and options.
+    /// Inverse contract transactions are in a separate trading account,
+    /// and the corresponding margin currency needs to be deposited into
+    /// the "inverse derivatives account" before trading, and the margins are not shared between each other.
+    /// For USDT perpetual, USDC perpetual, USDC Futures, spot and options are all traded within the "unified trading"
     /// </summary>
-    [EnumMember(Value = "2")] UnifiedMargin = 2,
+    [EnumMember(Value = "3")] UTA1 = 3,
 
     /// <summary>
-    /// Unified trade account, it can trade linear perpetual, options and spot
+    /// Inverse contract transactions are in a separate trading account,
+    /// and the corresponding margin currency needs to be deposited into
+    /// the "inverse derivatives account" before trading, and the margins are not shared between each other. 
+    /// For USDT perpetual, USDC perpetual, USDC Futures, spot and options are all traded within the "unified trading"
     /// </summary>
-    [EnumMember(Value = "3")] UnifiedTrade = 3,
+    /// <remarks>
+    /// Uta or uta (pro), they are the same thing, but pro has a slight performance advantage when trading via API
+    /// </remarks>
+    [EnumMember(Value = "4")] UTA1Pro = 4,
 
     /// <summary>
-    /// UTA Pro, the pro version of Unified trade account
+    /// The ultimate version of the unified account, integrating inverse contracts,
+    /// USDT perpetual, USDC perpetual, USDC Futures, spot and options into a unified trading system.
+    /// In cross margin and portfolio margin modes, margin is shared among all trades.
     /// </summary>
-    [EnumMember(Value = "4")] UTAPro = 4,
+    [EnumMember(Value = "5")] UTA2 = 5,
+
+    /// <summary>
+    /// The ultimate version of the unified account, integrating inverse contracts,
+    /// USDT perpetual, USDC perpetual, USDC Futures, spot and options into a unified trading system.
+    /// In cross margin and portfolio margin modes, margin is shared among all trades.
+    /// </summary>
+    /// <remarks>
+    /// Uta or uta (pro), they are the same thing, but pro has a slight performance advantage when trading via API
+    /// </remarks>
+    [EnumMember(Value = "6")] UTA2Pro = 6,
 }
