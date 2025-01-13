@@ -67,6 +67,12 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
                     continue;
                 }
 
+                if (symbol.InstrumentInfo.ContractType == "LinearFutures")
+                {
+                    // Skip LinearFutures contracts as they have expiration dates (USDC Futures)
+                    continue;
+                }
+
                 if (symbol.InstrumentInfo.ContractType == "InverseFutures")
                 {
                     // Skip crypto futures that are not perpetual
