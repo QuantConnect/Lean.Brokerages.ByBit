@@ -61,13 +61,19 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
                     continue;
                 }
 
-                if (symbol.InstrumentInfo.SettleCoin == "USDC")
+                if (string.Equals(symbol.InstrumentInfo.SettleCoin, "USDC", StringComparison.InvariantCultureIgnoreCase))
                 {
                     // Skip USDC perp and future contracts for now, they'll need some more implementation
                     continue;
                 }
 
-                if (symbol.InstrumentInfo.ContractType == "InverseFutures")
+                if (string.Equals(symbol.InstrumentInfo.ContractType, "LinearFutures", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // Skip LinearFutures contracts as they have expiration dates (USDC Futures)
+                    continue;
+                }
+
+                if (string.Equals(symbol.InstrumentInfo.ContractType, "InverseFutures", StringComparison.InvariantCultureIgnoreCase))
                 {
                     // Skip crypto futures that are not perpetual
                     continue;
