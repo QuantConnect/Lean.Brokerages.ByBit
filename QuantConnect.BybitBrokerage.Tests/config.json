@@ -6,7 +6,7 @@
   "bybit-maximum-symbols-per-connection": 16,
 
     "data-folder": "../../../../Lean/Data/",
-    "bybit-api-url": "https://api-testnet.bybit.com",
+    "bybit-api-url": "https://api.bybit.com",
     "bybit-websocket-url": "wss://stream-testnet.bybit.com",
 
     "job-user-id": "0",
