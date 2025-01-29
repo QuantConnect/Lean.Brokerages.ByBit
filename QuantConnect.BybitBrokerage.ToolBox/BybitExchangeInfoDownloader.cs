@@ -41,6 +41,10 @@ namespace QuantConnect.Brokerages.Bybit.ToolBox
         public IEnumerable<string> Get()
         {
             var apiUrl = Config.Get("bybit-api-url", "https://api.bybit.com");
+            if (apiUrl.Contains("testnet"))
+            {
+                throw new Exception("Testnet is not supported. Please use the production API URL.");
+            }
             using var client = new BybitApi(null, null, null, null, apiUrl);
 
             var linear = (SecurityType: SecurityType.CryptoFuture,
