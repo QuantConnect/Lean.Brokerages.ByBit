@@ -134,21 +134,31 @@ public partial class BybitBrokerage
             return false;
         }
 
-        var submitted = false;
-
         _messageHandler.WithLockedStream(() =>
         {
-            var result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order,
-                useMargin: _algorithm.BrokerageModel.AccountType == AccountType.Margin);
+            var result = default(Models.Requests.BybitUpdateOrderResponse);
+            try
+            {
+                result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order,
+                    useMargin: _algorithm.BrokerageModel.AccountType == AccountType.Margin);
+            }
+            catch (Exception ex)
+            {
+                OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event: " + ex.Message)
+                {
+                    Status = OrderStatus.Invalid
+                });
+                return;
+            }
+
             order.BrokerId.Add(result.OrderId);
             OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, "Bybit Order Event")
             {
                 Status = OrderStatus.Submitted
             });
-            submitted = true;
         });
 
-        return submitted;
+        return true;
     }
 
     /// <summary>
