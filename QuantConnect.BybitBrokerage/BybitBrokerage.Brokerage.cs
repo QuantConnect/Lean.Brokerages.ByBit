@@ -168,6 +168,38 @@ public partial class BybitBrokerage
     /// <returns>True if the request was made for the order to be updated, false otherwise</returns>
     public override bool UpdateOrder(Order order)
     {
+        var orderTicket = OrderProvider.GetOrderTicket(order.Id);
+        var lastUpdate = orderTicket.UpdateRequests.Last();
+        if (lastUpdate.LimitPrice == null
+            && lastUpdate.Quantity == null
+            && lastUpdate.StopPrice == null
+            && lastUpdate.TrailingAmount == null
+            && lastUpdate.TriggerPrice == null
+            && !string.IsNullOrEmpty(lastUpdate.Tag))
+        {
+            var previousTag = default(string);
+            var isTagChanged = default(bool);
+
+            if (orderTicket.UpdateRequests.Count == 1)
+            {
+                // Compare the last update's tag with the submit request's tag
+                previousTag = orderTicket.SubmitRequest.Tag;
+                isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
+            }
+            else
+            {
+                // Compare the last update's tag with the previous update's tag
+                previousTag = orderTicket.UpdateRequests[^2].Tag;
+                isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            if (isTagChanged)
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Information, "UpdateTag", $"OrderID: {order.Id}: Tag updated from '{previousTag}' to '{lastUpdate.Tag}'"));
+                return true;
+            }
+        }
+
         var category = GetBybitProductCategory(order.Symbol);
         if (category == BybitProductCategory.Spot)
         {
