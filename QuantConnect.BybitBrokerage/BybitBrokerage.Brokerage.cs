@@ -181,7 +181,7 @@ public partial class BybitBrokerage
             && lastUpdate.StopPrice == null
             && lastUpdate.TrailingAmount == null
             && lastUpdate.TriggerPrice == null
-            && !string.IsNullOrEmpty(lastUpdate.Tag))
+            && lastUpdate.Tag != null)
         {
             if (!_tagWarningLogged)
             {
