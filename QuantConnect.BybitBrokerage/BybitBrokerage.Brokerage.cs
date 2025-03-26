@@ -30,6 +30,12 @@ public partial class BybitBrokerage
     #region Brokerage
 
     /// <summary>
+    /// Indicates whether a warning about unsupported order tag updates has been logged.
+    /// Prevents logging the warning multiple times.
+    /// </summary>
+    private bool _tagWarningLogged;
+
+    /// <summary>
     /// Gets all open orders on the account.
     /// NOTE: The order objects returned do not have QC order IDs.
     /// </summary>
@@ -168,6 +174,29 @@ public partial class BybitBrokerage
     /// <returns>True if the request was made for the order to be updated, false otherwise</returns>
     public override bool UpdateOrder(Order order)
     {
+        var orderTicket = OrderProvider.GetOrderTicket(order.Id);
+        var lastUpdate = orderTicket.UpdateRequests.Last();
+        if (lastUpdate.LimitPrice == null
+            && lastUpdate.Quantity == null
+            && lastUpdate.StopPrice == null
+            && lastUpdate.TrailingAmount == null
+            && lastUpdate.TriggerPrice == null
+            && lastUpdate.Tag != null)
+        {
+            if (!_tagWarningLogged)
+            {
+                _tagWarningLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "TagUpdateNotSupported",
+                    $"{nameof(BybitBrokerage)}.{nameof(UpdateOrder)}: Updating the order tag is not supported internally by this brokerage."));
+            }
+
+            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, $"Bybit Order Event, Tag updated to '{lastUpdate.Tag}'")
+            {
+                Status = OrderStatus.UpdateSubmitted
+            });
+            return true;
+        }
+
         var category = GetBybitProductCategory(order.Symbol);
         if (category == BybitProductCategory.Spot)
         {
