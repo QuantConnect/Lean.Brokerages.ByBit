@@ -30,6 +30,12 @@ public partial class BybitBrokerage
     #region Brokerage
 
     /// <summary>
+    /// Indicates whether a warning about unsupported order tag updates has been logged.
+    /// Prevents logging the warning multiple times.
+    /// </summary>
+    private bool _tagWarningLogged;
+
+    /// <summary>
     /// Gets all open orders on the account.
     /// NOTE: The order objects returned do not have QC order IDs.
     /// </summary>
@@ -177,36 +183,18 @@ public partial class BybitBrokerage
             && lastUpdate.TriggerPrice == null
             && !string.IsNullOrEmpty(lastUpdate.Tag))
         {
-            var previousTag = default(string);
-            var isTagChanged = default(bool);
-
-            if (orderTicket.UpdateRequests.Count == 1)
+            if (!_tagWarningLogged)
             {
-                previousTag = orderTicket.SubmitRequest.Tag;
-            }
-            else
-            {
-                // Find the latest non-empty tag, skipping the last update.
-                for (var i = orderTicket.UpdateRequests.Count - 2; i >= 0; i--)
-                {
-                    if (!string.IsNullOrEmpty(orderTicket.UpdateRequests[i].Tag))
-                    {
-                        previousTag = orderTicket.UpdateRequests[i].Tag;
-                        break;
-                    }
-                }
+                _tagWarningLogged = true;
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "TagUpdateNotSupported",
+                    $"{nameof(BybitBrokerage)}.{nameof(UpdateOrder)}: Updating the order tag is not supported internally by this brokerage."));
             }
 
-            isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
-
-            if (isTagChanged)
+            OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, $"Bybit Order Event, Tag updated to '{lastUpdate.Tag}'")
             {
-                OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, $"Bybit Order Event, UpdateTag: OrderID: {order.Id}: Tag updated from '{previousTag}' to '{lastUpdate.Tag}'")
-                {
-                    Status = OrderStatus.UpdateSubmitted
-                });
-                return true;
-            }
+                Status = OrderStatus.UpdateSubmitted
+            });
+            return true;
         }
 
         var category = GetBybitProductCategory(order.Symbol);
