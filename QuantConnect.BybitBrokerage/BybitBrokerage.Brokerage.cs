@@ -182,20 +182,29 @@ public partial class BybitBrokerage
 
             if (orderTicket.UpdateRequests.Count == 1)
             {
-                // Compare the last update's tag with the submit request's tag
                 previousTag = orderTicket.SubmitRequest.Tag;
-                isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
             }
             else
             {
-                // Compare the last update's tag with the previous update's tag
-                previousTag = orderTicket.UpdateRequests[^2].Tag;
-                isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
+                // Find the latest non-empty tag, skipping the last update.
+                for (var i = orderTicket.UpdateRequests.Count - 2; i >= 0; i--)
+                {
+                    if (!string.IsNullOrEmpty(orderTicket.UpdateRequests[i].Tag))
+                    {
+                        previousTag = orderTicket.UpdateRequests[i].Tag;
+                        break;
+                    }
+                }
             }
+
+            isTagChanged = !previousTag.Equals(lastUpdate.Tag, StringComparison.InvariantCultureIgnoreCase);
 
             if (isTagChanged)
             {
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Information, "UpdateTag", $"OrderID: {order.Id}: Tag updated from '{previousTag}' to '{lastUpdate.Tag}'"));
+                OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, $"Bybit Order Event, UpdateTag: OrderID: {order.Id}: Tag updated from '{previousTag}' to '{lastUpdate.Tag}'")
+                {
+                    Status = OrderStatus.UpdateSubmitted
+                });
                 return true;
             }
         }
