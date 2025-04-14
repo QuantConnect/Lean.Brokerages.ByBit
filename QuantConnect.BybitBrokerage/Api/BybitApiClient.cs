@@ -93,6 +93,7 @@ public class BybitApiClient : IDisposable
         request.AddHeader("X-BAPI-API-KEY", _apiKey);
         request.AddHeader("X-BAPI-TIMESTAMP", nonce);
         request.AddHeader("X-BAPI-SIGN-TYPE", "2");
+        request.AddHeader("X-Referer", "Ui000728");
     }
 
     /// <summary>
