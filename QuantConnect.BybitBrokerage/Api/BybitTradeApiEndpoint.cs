@@ -170,7 +170,6 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
                 req.TriggerPrice = stopMarketOrder.StopPrice;
                 ticker = GetTickerPrice(category, order);
                 req.TriggerDirection = req.TriggerPrice > ticker ? 1 : 2;
-                req.ReduceOnly = true;
 
                 if (category == BybitProductCategory.Spot)
                 {
