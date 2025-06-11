@@ -1,4 +1,7 @@
 {
+	"name" : "Bybit",
+	"logo-url" : "https://cdn.quantconnect.com/i/tu/bybit-brokerage-logo.svg",
+	"min-deposit" : "None",
 	"description": "ByBit is a Singapore domiciled cryptocurrency exchange. The integration with QuantConnect supports cryptocurrency spot and futures trading, four orders types, and both cash and margin trading.",
 	
 	"platforms-features": [
