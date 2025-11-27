@@ -140,13 +140,15 @@ public partial class BybitBrokerage
             return false;
         }
 
+        var submitted = false;
         _messageHandler.WithLockedStream(() =>
         {
-            var result = default(Models.Requests.BybitUpdateOrderResponse);
+            var result = default(Models.Requests.BybitOrderResponse);
             try
             {
                 result = ApiClient.Trade.PlaceOrder(GetBybitProductCategory(order.Symbol), order,
                     useMargin: _algorithm.BrokerageModel.AccountType == AccountType.Margin);
+                submitted = true;
             }
             catch (Exception ex)
             {
@@ -164,7 +166,7 @@ public partial class BybitBrokerage
             });
         });
 
-        return true;
+        return submitted;
     }
 
     /// <summary>

@@ -18,13 +18,13 @@ namespace QuantConnect.Brokerages.Bybit.Models.Requests;
 /// <summary>
 /// Bybit update order api response
 /// </summary>
-public class BybitUpdateOrderResponse
+public class BybitOrderResponse
 {
     /// <summary>
     /// Order Id
     /// </summary>
     public string OrderId { get; set; }
-    
+
     /// <summary>
     /// Order link id
     /// </summary>
