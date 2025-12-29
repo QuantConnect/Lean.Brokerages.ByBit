@@ -239,7 +239,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _privateWebSocketUrl = $"{baseWssUrl}/v5/private";
         var basePublicWebSocketUrl = $"{baseWssUrl}/v5/public";
 
-        Initialize(_privateWebSocketUrl, new BybitWebSocketWrapper(), null, apiKey, apiSecret);
+        Initialize(_privateWebSocketUrl, new BybitWebSocketWrapper(), httpClient: null, apiKey, apiSecret);
 
         _job = job;
         _algorithm = algorithm;
