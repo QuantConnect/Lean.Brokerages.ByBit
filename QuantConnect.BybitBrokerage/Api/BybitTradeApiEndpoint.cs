@@ -55,7 +55,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
     /// <param name="category">The product category</param>
     /// <param name="order">The order to cancel</param>
     /// <returns>The order update response</returns>
-    public BybitUpdateOrderResponse CancelOrder(BybitProductCategory category, Order order)
+    public BybitOrderResponse CancelOrder(BybitProductCategory category, Order order)
     {
         var cancelOrderRequest = new ByBitCancelOrderRequest
         {
@@ -65,7 +65,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
             OrderFilter = GetOrderFilter(category, order)
         };
 
-        return ExecutePostRequest<BybitUpdateOrderResponse>("/order/cancel", cancelOrderRequest);
+        return ExecutePostRequest<BybitOrderResponse>("/order/cancel", cancelOrderRequest);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
     /// <param name="category">The product category</param>
     /// <param name="order">The order to place</param>
     /// <returns>The order update response</returns>
-    public BybitUpdateOrderResponse PlaceOrder(BybitProductCategory category, Order order, bool useMargin)
+    public BybitOrderResponse PlaceOrder(BybitProductCategory category, Order order, bool useMargin)
     {
         var placeOrderRequest = CreateRequest(category, order);
         if (category == BybitProductCategory.Spot)
@@ -82,7 +82,7 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
             placeOrderRequest.IsLeverage = useMargin ? 1 : 0;
         }
 
-        return ExecutePostRequest<BybitUpdateOrderResponse>("/order/create", placeOrderRequest);
+        return ExecutePostRequest<BybitOrderResponse>("/order/create", placeOrderRequest);
     }
 
     /// <summary>
@@ -91,12 +91,12 @@ public class BybitTradeApiEndpoint : BybitApiEndpoint
     /// <param name="category">The product category</param>
     /// <param name="order">The order to update</param>
     /// <returns>The order update response</returns>
-    public BybitUpdateOrderResponse UpdateOrder(BybitProductCategory category, Order order)
+    public BybitOrderResponse UpdateOrder(BybitProductCategory category, Order order)
     {
         var updateOrderRequest = CreateRequest<ByBitUpdateOrderRequest>(category, order);
         updateOrderRequest.OrderId = order.BrokerId.FirstOrDefault();
 
-        return ExecutePostRequest<BybitUpdateOrderResponse>("/order/amend", updateOrderRequest);
+        return ExecutePostRequest<BybitOrderResponse>("/order/amend", updateOrderRequest);
     }
 
     /// <summary>
