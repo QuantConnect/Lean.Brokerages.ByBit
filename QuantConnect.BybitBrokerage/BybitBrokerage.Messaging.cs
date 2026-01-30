@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Collections.Concurrent;
@@ -38,7 +38,8 @@ namespace QuantConnect.Brokerages.Bybit;
 
 public partial class BybitBrokerage
 {
-    private readonly ConcurrentDictionary<int, decimal> _remainingFillQuantity = new();
+    private readonly ConcurrentDictionary<int, decimal> _expectedFillQuantity = new();
+    private readonly ConcurrentDictionary<int, decimal> _cumulativeFillQuantity = new();
 
     private class StreamAuthenticatedEventArgs : EventArgs
     {
@@ -128,18 +129,26 @@ public partial class BybitBrokerage
             var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSecurityType(tradeUpdate.Category), MarketName);
             var filledQuantity = Math.Abs(tradeUpdate.ExecutionQuantity);
 
-            _remainingFillQuantity.TryGetValue(leanOrder.Id, out var accumulatedFilledQuantity);
+            var expectedQuantity = leanOrder.AbsoluteQuantity;
+            if (_expectedFillQuantity.TryGetValue(leanOrder.Id, out var cumBrokerageExecQty))
+            {
+                expectedQuantity = cumBrokerageExecQty;
+            }
+
+            _cumulativeFillQuantity.TryGetValue(leanOrder.Id, out var accumulatedFilledQuantity);
+
             var status = Orders.OrderStatus.PartiallyFilled;
-            // TODO: double check fees can't be taken from the fill quantity causing us to never set filled status
-            if (accumulatedFilledQuantity + filledQuantity == leanOrder.AbsoluteQuantity)
+            if (accumulatedFilledQuantity + filledQuantity == expectedQuantity)
             {
                 status = Orders.OrderStatus.Filled;
-                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
+                _expectedFillQuantity.TryRemove(leanOrder.Id, out _);
+                _cumulativeFillQuantity.TryRemove(leanOrder.Id, out _);
             }
             else
             {
-                _remainingFillQuantity[leanOrder.Id] = filledQuantity + accumulatedFilledQuantity;
+                _cumulativeFillQuantity[leanOrder.Id] = accumulatedFilledQuantity + filledQuantity;
             }
+
             var fee = OrderFee.Zero;
             if (tradeUpdate.ExecutionFee != 0)
             {
@@ -193,7 +202,7 @@ public partial class BybitBrokerage
         foreach (var order in orders)
         {
             //We're not interested in order executions here as HandleOrderExecution is taking care of this
-            if (order.Status is OrderStatus.Filled or OrderStatus.PartiallyFilled) continue;
+            if (order is { Status: OrderStatus.PartiallyFilled }) continue;
 
             var leanOrder = OrderProvider.GetOrdersByBrokerageId(order.OrderId).FirstOrDefault();
             if (leanOrder == null) continue;
@@ -201,10 +210,86 @@ public partial class BybitBrokerage
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
+            if (order is { Status: OrderStatus.Filled, QuantityFilled: not null })
+            {
+                if (!_cumulativeFillQuantity.TryGetValue(leanOrder.Id, out var cumulativeFill)
+                    || cumulativeFill < order.QuantityFilled.Value)
+                {
+                    // OrderUpdate event arrived too early, we expect more Executions
+                    _expectedFillQuantity.TryAdd(leanOrder.Id, order.QuantityFilled.Value);
+
+                    continue;
+                }
+
+                // We need to issue the OrderStatus.Filled event
+                // as HandleOrderExecution issued only PartiallyFilled events, and no more events are expected
+                // Order is fully filled, but less than Lean expected, i.e.
+                // Bybit can slightly reduce the order size if it was partially filled initialy, i.e. see json example (cumExecQty, leavesQty, leavesValue)
+                // {
+                //   "topic": "order",
+                //   "id": "106619370_20000_2021269409",
+                //   "creationTime": 1769798300234,
+                //   "data": [
+                //     {
+                //       "category": "spot",
+                //       "symbol": "BTCUSDT",
+                //       "orderId": "2139617652191356928",
+                //       "orderLinkId": "2139617652191356929",
+                //       "blockTradeId": "",
+                //       "side": "Buy",
+                //       "positionIdx": 0,
+                //       "orderStatus": "Filled",
+                //       "cancelType": "UNKNOWN",
+                //       "rejectReason": "EC_NoError",
+                //       "timeInForce": "IOC",
+                //       "isLeverage": "0",
+                //       "price": "0",
+                //       "qty": "8.2379800",
+                //       "avgPrice": "82439.8",
+                //       "leavesQty": "0",
+                //       "leavesValue": "0.0764398",
+                //       "cumExecQty": "0.000099",
+                //       "cumExecValue": "8.1615402",
+                //       "cumExecFee": "0.0000000891",
+                //       "orderType": "Market",
+                //       "stopOrderType": "",
+                //       "orderIv": "",
+                //       "triggerPrice": "0.0",
+                //       "takeProfit": "0.0",
+                //       "stopLoss": "0.0",
+                //       "triggerBy": "",
+                //       "tpTriggerBy": "",
+                //       "slTriggerBy": "",
+                //       "triggerDirection": 0,
+                //       "placeType": "",
+                //       "lastPriceOnCreated": "82439.3",
+                //       "closeOnTrigger": false,
+                //       "reduceOnly": false,
+                //       "smpGroup": 0,
+                //       "smpType": "None",
+                //       "smpOrderId": "",
+                //       "slLimitPrice": "0.0",
+                //       "tpLimitPrice": "0.0",
+                //       "marketUnit": "quoteCoin",
+                //       "createdTime": "1769798300228",
+                //       "updatedTime": "1769798300233",
+                //       "feeCurrency": "BTC",
+                //       "slippageTolerance": "",
+                //       "slippageToleranceType": "UNKNOWN",
+                //       "cumFeeDetail": {
+                //         "BTC": "0.0000000891"
+                //       }
+                //     }
+                //   ]
+                // }
+            }
+
             if (newStatus.IsClosed())
             {
-                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
+                _expectedFillQuantity.TryRemove(leanOrder.Id, out _);
+                _cumulativeFillQuantity.TryRemove(leanOrder.Id, out _);
             }
+
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             OnOrderEvent(orderEvent);
         }
@@ -325,11 +410,12 @@ public partial class BybitBrokerage
         }
 
         orderBook.BestBidAskUpdated += OnBestBidAskUpdated;
-        if(orderBook.BestBidPrice == 0 && orderBook.BestAskPrice == 0)
+        if (orderBook.BestBidPrice == 0 && orderBook.BestAskPrice == 0)
         {
             // nothing to emit, can happen with illiquid assets
             return;
         }
+
         EmitQuoteTick(symbol, orderBook.BestBidPrice, orderBook.BestBidSize, orderBook.BestAskPrice,
             orderBook.BestAskSize);
     }
