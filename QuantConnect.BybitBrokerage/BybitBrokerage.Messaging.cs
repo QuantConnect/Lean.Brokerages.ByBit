@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Collections.Concurrent;
@@ -38,8 +38,6 @@ namespace QuantConnect.Brokerages.Bybit;
 
 public partial class BybitBrokerage
 {
-    private readonly ConcurrentDictionary<int, decimal> _remainingFillQuantity = new();
-
     private class StreamAuthenticatedEventArgs : EventArgs
     {
         public string Message { get; init; }
@@ -127,19 +125,12 @@ public partial class BybitBrokerage
             var symbol = tradeUpdate.Symbol;
             var leanSymbol = _symbolMapper.GetLeanSymbol(symbol, GetSecurityType(tradeUpdate.Category), MarketName);
             var filledQuantity = Math.Abs(tradeUpdate.ExecutionQuantity);
+            var leavesQuantity = Math.Abs(tradeUpdate.LeavesQuantity);
 
-            _remainingFillQuantity.TryGetValue(leanOrder.Id, out var accumulatedFilledQuantity);
-            var status = Orders.OrderStatus.PartiallyFilled;
-            // TODO: double check fees can't be taken from the fill quantity causing us to never set filled status
-            if (accumulatedFilledQuantity + filledQuantity == leanOrder.AbsoluteQuantity)
-            {
-                status = Orders.OrderStatus.Filled;
-                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
-            }
-            else
-            {
-                _remainingFillQuantity[leanOrder.Id] = filledQuantity + accumulatedFilledQuantity;
-            }
+            var status = leavesQuantity > 0
+                ? Orders.OrderStatus.PartiallyFilled
+                : Orders.OrderStatus.Filled;
+
             var fee = OrderFee.Zero;
             if (tradeUpdate.ExecutionFee != 0)
             {
@@ -201,10 +192,6 @@ public partial class BybitBrokerage
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
-            if (newStatus.IsClosed())
-            {
-                _remainingFillQuantity.TryRemove(leanOrder.Id, out var _);
-            }
             var orderEvent = new OrderEvent(leanOrder, order.UpdateTime, OrderFee.Zero) { Status = newStatus };
             OnOrderEvent(orderEvent);
         }
@@ -325,11 +312,12 @@ public partial class BybitBrokerage
         }
 
         orderBook.BestBidAskUpdated += OnBestBidAskUpdated;
-        if(orderBook.BestBidPrice == 0 && orderBook.BestAskPrice == 0)
+        if (orderBook.BestBidPrice == 0 && orderBook.BestAskPrice == 0)
         {
             // nothing to emit, can happen with illiquid assets
             return;
         }
+
         EmitQuoteTick(symbol, orderBook.BestBidPrice, orderBook.BestBidSize, orderBook.BestAskPrice,
             orderBook.BestAskSize);
     }

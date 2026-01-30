@@ -154,4 +154,10 @@ public class BybitTrade
     /// </summary>
     [JsonProperty("closedSize")]
     public decimal? ClosedQuantity { get; set; }
+
+    /// <summary>
+    /// The remaining qty not executed
+    /// </summary>
+    [JsonProperty("leavesQty")]
+    public decimal LeavesQuantity { get; set; }
 }
