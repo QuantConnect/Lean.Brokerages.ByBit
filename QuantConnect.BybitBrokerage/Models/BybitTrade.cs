@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using Newtonsoft.Json;
@@ -154,10 +154,4 @@ public class BybitTrade
     /// </summary>
     [JsonProperty("closedSize")]
     public decimal? ClosedQuantity { get; set; }
-
-    /// <summary>
-    /// The remaining qty not executed
-    /// </summary>
-    [JsonProperty("leavesQty")]
-    public decimal LeavesQuantity { get; set; }
 }
