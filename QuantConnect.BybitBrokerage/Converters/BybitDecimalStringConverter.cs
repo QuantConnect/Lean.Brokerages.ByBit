@@ -70,19 +70,14 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
             return d.SafeDecimalCast();
         }
 
+        if (val is not null && IsNumber(val))
+        {
+            return Convert.ToDecimal(val);
+        }
+
         if (val is string str && TryParse(str, out var res))
         {
             return res;
-        }
-
-        if (val is not null)
-        {
-            // check other number types:
-            var strValue = Convert.ToString(val, CultureInfo.InvariantCulture);
-            if (TryParse(strValue, out var resAfterConversion))
-            {
-                return resAfterConversion;
-            }
         }
 
         throw new Exception();
@@ -91,5 +86,20 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
     private static bool TryParse(string str, out decimal value)
     {
         return decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out value);
+    }
+
+    public static bool IsNumber(object value)
+    {
+        return value is sbyte
+               || value is byte
+               || value is short
+               || value is ushort
+               || value is int
+               || value is uint
+               || value is long
+               || value is ulong
+               || value is float
+               || value is double
+               || value is decimal;
     }
 }
