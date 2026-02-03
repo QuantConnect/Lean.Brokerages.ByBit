@@ -84,6 +84,11 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     public override bool IsConnected => _apiClientLazy?.IsValueCreated != true || WebSocket?.IsOpen == true;
 
     /// <summary>
+    /// Enables concurrent processing of messages to and from the brokerage.
+    /// </summary>
+    public override bool ConcurrencyEnabled { get; set; } = true;
+
+    /// <summary>
     /// Parameterless constructor for brokerage
     /// </summary>
     public BybitBrokerage() : base(MarketName)
@@ -244,7 +249,7 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         _job = job;
         _algorithm = algorithm;
         _aggregator = aggregator;
-        _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
+        _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage, ConcurrencyEnabled);
         _symbolMapper = new SymbolPropertiesDatabaseSymbolMapper(MarketName);
         OrderProvider = orderProvider;
 

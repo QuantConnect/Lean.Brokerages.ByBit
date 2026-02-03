@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Diagnostics;
@@ -29,13 +29,13 @@ namespace QuantConnect.Brokerages.Bybit.Api;
 /// </summary>
 public class BybitApiClient : IDisposable
 {
-    private readonly HMACSHA256 _hmacSha256;
     private readonly string _apiKey;
+    private readonly byte[] _apiSecretBytes;
     private readonly RestClient _restClient;
     private readonly RateGate _rateGate;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BybitApiClient"/> class 
+    /// Initializes a new instance of the <see cref="BybitApiClient"/> class
     /// </summary>
     /// <param name="apiKey">The api key</param>
     /// <param name="apiSecret">The api secret</param>
@@ -49,7 +49,7 @@ public class BybitApiClient : IDisposable
     {
         _restClient = new RestClient(restApiUrl);
         _apiKey = apiKey;
-        _hmacSha256 = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret ?? string.Empty));
+        _apiSecretBytes = Encoding.UTF8.GetBytes(apiSecret ?? string.Empty);
         _rateGate = new RateGate(maxRequestsPerSecond, Time.OneSecond);
     }
 
@@ -116,8 +116,7 @@ public class BybitApiClient : IDisposable
     public string Sign(string stringToSign)
     {
         var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
-
-        var computedHash = _hmacSha256.ComputeHash(messageBytes);
+        var computedHash = HMACSHA256.HashData(_apiSecretBytes, messageBytes);
         var hex = new StringBuilder(computedHash.Length * 2);
         foreach (var b in computedHash)
         {
@@ -132,7 +131,6 @@ public class BybitApiClient : IDisposable
     /// </summary>
     public void Dispose()
     {
-        _hmacSha256.DisposeSafely();
         _rateGate.DisposeSafely();
     }
 

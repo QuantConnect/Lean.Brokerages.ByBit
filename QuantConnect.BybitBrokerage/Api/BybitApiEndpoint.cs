@@ -45,7 +45,7 @@ public abstract class BybitApiEndpoint
             NamingStrategy = new CamelCaseNamingStrategy()
         },
         Converters = new List<JsonConverter>()
-            { new ByBitKlineJsonConverter(), new StringEnumConverter(), new BybitDecimalStringConverter() },
+            { new StringEnumConverter(), new BybitDecimalStringConverter() },
         NullValueHandling = NullValueHandling.Ignore
     };
 
@@ -115,7 +115,7 @@ public abstract class BybitApiEndpoint
             }
 
             var nextCursor = result.NextPageCursor;
-            // Break when the cursor is either empty or the same as the one we just processed 
+            // Break when the cursor is either empty or the same as the one we just processed
             if (string.IsNullOrEmpty(nextCursor) || (parameterDict.TryGetValue("cursor", out var previousCursor) &&
                                                      previousCursor == nextCursor))
             {
