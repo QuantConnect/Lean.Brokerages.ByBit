@@ -13,11 +13,15 @@
  * limitations under the License.
 */
 
+using Newtonsoft.Json;
+using QuantConnect.Brokerages.Bybit.Converters;
+
 namespace QuantConnect.Brokerages.Bybit.Models;
 
 /// <summary>
 /// KLine info
 /// </summary>
+[JsonConverter(typeof(ByBitKlineJsonConverter))]
 public class ByBitKLine
 {
     /// <summary>

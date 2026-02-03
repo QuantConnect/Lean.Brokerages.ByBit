@@ -30,7 +30,7 @@ namespace QuantConnect.Brokerages.Bybit.Api;
 public class BybitApiClient : IDisposable
 {
     private readonly string _apiKey;
-    private readonly string _apiSecret;
+    private readonly byte[] _apiSecretBytes;
     private readonly RestClient _restClient;
     private readonly RateGate _rateGate;
 
@@ -49,7 +49,7 @@ public class BybitApiClient : IDisposable
     {
         _restClient = new RestClient(restApiUrl);
         _apiKey = apiKey;
-        _apiSecret = apiSecret;
+        _apiSecretBytes = Encoding.UTF8.GetBytes(apiSecret ?? string.Empty);
         _rateGate = new RateGate(maxRequestsPerSecond, Time.OneSecond);
     }
 
@@ -116,8 +116,7 @@ public class BybitApiClient : IDisposable
     public string Sign(string stringToSign)
     {
         var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
-        var key = Encoding.UTF8.GetBytes(_apiSecret ?? string.Empty);
-        var computedHash = HMACSHA256.HashData(key, messageBytes);
+        var computedHash = HMACSHA256.HashData(_apiSecretBytes, messageBytes);
         var hex = new StringBuilder(computedHash.Length * 2);
         foreach (var b in computedHash)
         {

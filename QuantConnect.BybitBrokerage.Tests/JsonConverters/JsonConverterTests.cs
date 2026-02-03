@@ -76,6 +76,10 @@ public class JsonConverterTests
     [TestCase("-1", -1, true)]
     [TestCase("1.333", 1.333, true)]
     [TestCase("1.333", 1.333, false)]
+    [TestCase("9e-8", 0.00000009, true)]
+    [TestCase("1.3117285e+06", 1311728.5, true)]
+    [TestCase("9e-8", 0.00000009, false)]
+    [TestCase("1.3117285e+06", 1311728.5, false)]
     public void BybitDecimalStringConverterTests(string value, decimal expected, bool quote = true)
     {
         var settings = new JsonSerializerSettings
@@ -114,13 +118,6 @@ public class JsonConverterTests
     public void BybitKlineJsonConverterTests(long openTime, decimal open, decimal high, decimal low, decimal close,
         decimal turnover, decimal volume)
     {
-        var settings = new JsonSerializerSettings
-        {
-            Converters = new List<JsonConverter>
-            {
-                new ByBitKlineJsonConverter()
-            }
-        };
         var dataArray = new object[]
         {
             openTime,
@@ -134,7 +131,7 @@ public class JsonConverterTests
         var arrayString = '[' + string.Join(',', dataArray) + ']';
         var jsonString = TestObject<ByBitKLine>.CreateJsonObject(arrayString);
 
-        var kline = JsonConvert.DeserializeObject<TestObject<ByBitKLine>>(jsonString, settings).Value;
+        var kline = JsonConvert.DeserializeObject<TestObject<ByBitKLine>>(jsonString).Value;
 
         Assert.AreEqual(openTime, kline.OpenTime);
         Assert.AreEqual(open, kline.Open);

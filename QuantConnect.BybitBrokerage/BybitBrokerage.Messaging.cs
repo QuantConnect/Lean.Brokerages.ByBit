@@ -210,8 +210,13 @@ public partial class BybitBrokerage
             var newStatus = ConvertOrderStatus(order.Status);
             if (newStatus == leanOrder.Status) continue;
 
-            if (order is { Status: OrderStatus.Filled, QuantityFilled: not null })
+            if (order is { Status: OrderStatus.Filled })
             {
+                if (order is { QuantityFilled: null })
+                {
+                    continue;
+                }
+
                 if (!_cumulativeFillQuantity.TryGetValue(leanOrder.Id, out var cumulativeFill)
                     || cumulativeFill < order.QuantityFilled.Value)
                 {
@@ -232,53 +237,16 @@ public partial class BybitBrokerage
                 //   "data": [
                 //     {
                 //       "category": "spot",
-                //       "symbol": "BTCUSDT",
-                //       "orderId": "2139617652191356928",
-                //       "orderLinkId": "2139617652191356929",
-                //       "blockTradeId": "",
+                //       "symbol": "BTCUSDT"
                 //       "side": "Buy",
-                //       "positionIdx": 0,
                 //       "orderStatus": "Filled",
-                //       "cancelType": "UNKNOWN",
-                //       "rejectReason": "EC_NoError",
-                //       "timeInForce": "IOC",
-                //       "isLeverage": "0",
-                //       "price": "0",
-                //       "qty": "8.2379800",
-                //       "avgPrice": "82439.8",
                 //       "leavesQty": "0",
                 //       "leavesValue": "0.0764398",
                 //       "cumExecQty": "0.000099",
                 //       "cumExecValue": "8.1615402",
                 //       "cumExecFee": "0.0000000891",
                 //       "orderType": "Market",
-                //       "stopOrderType": "",
-                //       "orderIv": "",
-                //       "triggerPrice": "0.0",
-                //       "takeProfit": "0.0",
-                //       "stopLoss": "0.0",
-                //       "triggerBy": "",
-                //       "tpTriggerBy": "",
-                //       "slTriggerBy": "",
-                //       "triggerDirection": 0,
-                //       "placeType": "",
-                //       "lastPriceOnCreated": "82439.3",
-                //       "closeOnTrigger": false,
-                //       "reduceOnly": false,
-                //       "smpGroup": 0,
-                //       "smpType": "None",
-                //       "smpOrderId": "",
-                //       "slLimitPrice": "0.0",
-                //       "tpLimitPrice": "0.0",
-                //       "marketUnit": "quoteCoin",
-                //       "createdTime": "1769798300228",
-                //       "updatedTime": "1769798300233",
-                //       "feeCurrency": "BTC",
-                //       "slippageTolerance": "",
-                //       "slippageToleranceType": "UNKNOWN",
-                //       "cumFeeDetail": {
-                //         "BTC": "0.0000000891"
-                //       }
+                //       ... rest fields
                 //     }
                 //   ]
                 // }

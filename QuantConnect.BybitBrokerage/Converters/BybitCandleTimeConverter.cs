@@ -11,9 +11,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
+using System.Globalization;
 using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Bybit.Converters;
@@ -59,7 +60,7 @@ public class BybitCandleTimeConverter : JsonConverter<DateTime>
         JsonSerializer serializer)
     {
         var str = (string)reader.Value;
-        if (str == null || !decimal.TryParse(str, out var ts))
+        if (str == null || !decimal.TryParse(str, CultureInfo.InvariantCulture, out var ts))
         {
             return existingValue;
         }

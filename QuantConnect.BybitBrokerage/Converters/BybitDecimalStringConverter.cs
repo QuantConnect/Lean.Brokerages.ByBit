@@ -70,7 +70,7 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
             return d.SafeDecimalCast();
         }
 
-        if (val is string str && decimal.TryParse(str, NumberStyles.Currency, CultureInfo.InvariantCulture, out var res))
+        if (val is string str && decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var res))
         {
             return res;
         }
