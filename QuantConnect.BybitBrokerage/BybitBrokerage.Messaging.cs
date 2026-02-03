@@ -229,7 +229,7 @@ public partial class BybitBrokerage
                 // We need to issue the OrderStatus.Filled event
                 // as HandleOrderExecution issued only PartiallyFilled events, and no more events are expected
                 // Order is fully filled, but less than Lean expected, i.e.
-                // Bybit can slightly reduce the order size if it was partially filled initialy, i.e. see json example (cumExecQty, leavesQty, leavesValue)
+                // Bybit can slightly reduce the order size if it was partially filled initialy, see json example (cumExecQty, leavesQty, leavesValue) for the Buy 0.0001 (reduced by the lot size)
                 // {
                 //   "topic": "order",
                 //   "id": "106619370_20000_2021269409",
