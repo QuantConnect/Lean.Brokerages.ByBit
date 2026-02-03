@@ -11,10 +11,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using QuantConnect.Brokerages.Bybit.Converters;
@@ -114,24 +115,33 @@ public class JsonConverterTests
         Assert.AreEqual(expected, obj.Value);
     }
 
-    [TestCase(1, 100, 200, 0, 150, 1000, 10000)]
-    public void BybitKlineJsonConverterTests(long openTime, decimal open, decimal high, decimal low, decimal close,
+    [TestCase(new[] { "1", "100", "200", "0", "150", "1000", "10000" }, 1, 100, 200, 0, 150, 1000, 10000)]
+    [TestCase(new object[] { 1, 100, 200, 0, 150, 1000, 10000 }, 1, 100, 200, 0, 150, 1000, 10000)]
+    [TestCase(new[] { "1770125280000", "984590.9", "1e+06", "984590.9", "999990", "0.006", "5994.4068" }, 1770125280000,
+        984590.9, 1000000.0, 984590.9, 999990, 0.006, 5994.4068)]
+    public void BybitKlineJsonConverterTests(object[] data, long openTime, decimal open, decimal high, decimal low,
+        decimal close,
         decimal turnover, decimal volume)
     {
-        var dataArray = new object[]
+        var settings = new JsonSerializerSettings
         {
-            openTime,
-            open,
-            high,
-            low,
-            close,
-            turnover,
-            volume
+            Converters = new List<JsonConverter>
+            {
+                new BybitDecimalStringConverter()
+            }
         };
-        var arrayString = '[' + string.Join(',', dataArray) + ']';
+
+        var stringifiedData = data.Select(o =>
+            o switch
+            {
+                String s => "\"" + s + "\"",
+                _ => o.ToString()
+            }
+        );
+        var arrayString = '[' + string.Join(',', stringifiedData) + ']';
         var jsonString = TestObject<ByBitKLine>.CreateJsonObject(arrayString);
 
-        var kline = JsonConvert.DeserializeObject<TestObject<ByBitKLine>>(jsonString).Value;
+        var kline = JsonConvert.DeserializeObject<TestObject<ByBitKLine>>(jsonString, settings).Value;
 
         Assert.AreEqual(openTime, kline.OpenTime);
         Assert.AreEqual(open, kline.Open);

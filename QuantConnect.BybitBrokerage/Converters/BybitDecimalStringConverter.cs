@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Globalization;
@@ -55,7 +55,6 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
     /// <param name="existingValue">The existing value of object being read.</param>
     /// <param name="hasExistingValue">The existing value has a value.</param>
     /// <param name="serializer">The calling serializer.</param>
-
     /// <returns>The object value.</returns>
     public override decimal ReadJson(JsonReader reader, Type objectType, decimal existingValue, bool hasExistingValue,
         JsonSerializer serializer)
@@ -65,16 +64,32 @@ public class BybitDecimalStringConverter : JsonConverter<decimal>
         {
             return dec;
         }
+
         if (val is double d)
         {
             return d.SafeDecimalCast();
         }
 
-        if (val is string str && decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var res))
+        if (val is string str && TryParse(str, out var res))
         {
             return res;
         }
 
+        if (val is not null)
+        {
+            // check other number types:
+            var strValue = Convert.ToString(val, CultureInfo.InvariantCulture);
+            if (TryParse(strValue, out var resAfterConversion))
+            {
+                return resAfterConversion;
+            }
+        }
+
         throw new Exception();
+    }
+
+    private static bool TryParse(string str, out decimal value)
+    {
+        return decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out value);
     }
 }

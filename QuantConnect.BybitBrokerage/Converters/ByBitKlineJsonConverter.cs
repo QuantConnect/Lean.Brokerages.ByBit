@@ -67,12 +67,12 @@ public class ByBitKlineJsonConverter : JsonConverter<ByBitKLine>
 
         existingValue = existingValue ?? new ByBitKLine();
         existingValue.OpenTime = token[0]!.Value<long>();
-        existingValue.Open = token[1]!.Value<decimal>();
-        existingValue.High = token[2]!.Value<decimal>();
-        existingValue.Low = token[3]!.Value<decimal>();
-        existingValue.Close = token[4]!.Value<decimal>();
-        existingValue.Turnover = token[5]!.Value<decimal>();
-        existingValue.Volume = token[6]!.Value<decimal>();
+        existingValue.Open = token[1]!.ToObject<decimal>(serializer);
+        existingValue.High = token[2]!.ToObject<decimal>(serializer);
+        existingValue.Low = token[3]!.ToObject<decimal>(serializer);
+        existingValue.Close = token[4]!.ToObject<decimal>(serializer);
+        existingValue.Turnover = token[5]!.ToObject<decimal>(serializer);
+        existingValue.Volume = token[6]!.ToObject<decimal>(serializer);
 
 
         return existingValue;
