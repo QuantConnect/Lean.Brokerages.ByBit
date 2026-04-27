@@ -46,9 +46,11 @@ namespace QuantConnect.Brokerages.Bybit
         {
             { "bybit-api-secret", Config.Get("bybit-api-secret") },
             { "bybit-api-key", Config.Get("bybit-api-key") },
-            // paper trading available using https://api-testnet.bybit.com
+            // demo (paper) trading: https://api-demo.bybit.com (https://bybit-exchange.github.io/docs/v5/demo)
+            // testnet: https://api-testnet.bybit.com
             { "bybit-api-url", Config.Get("bybit-api-url", "https://api.bybit.com") },
-            // paper trading available using wss://stream-testnet.bybit.com
+            // demo (paper) trading: wss://stream-demo.bybit.com
+            // testnet: wss://stream-testnet.bybit.com
             { "bybit-websocket-url", Config.Get("bybit-websocket-url", "wss://stream.bybit.com") },
             { "bybit-vip-level", Config.Get("bybit-vip-level", "VIP0") },
             // load holdings if available

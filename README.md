@@ -131,6 +131,24 @@ Follow these steps to start local live trading with the Bybit brokerage:
 
 If you already have a live environment configured in your [Lean configuration file](https://www.quantconnect.com/docs/v2/lean-cli/initialization/configuration#03-Lean-Configuration), you can skip the interactive wizard by providing the `--environment <value>` option in step 2. The value of this option must be the name of an environment which has `live-mode` set to true.
 
+### Demo (paper) and testnet trading
+
+To trade against [Bybit's Demo Trading](https://bybit-exchange.github.io/docs/v5/demo) — a sandboxed account that uses real mainnet market data — set the following in your Lean configuration and use API keys issued from Bybit's Demo Trading portal:
+
+```
+"bybit-api-url": "https://api-demo.bybit.com",
+"bybit-websocket-url": "wss://stream-demo.bybit.com"
+```
+
+Public market data automatically falls back to mainnet (`wss://stream.bybit.com`), since demo trading does not expose its own public stream.
+
+To use the fully isolated [Bybit testnet](https://testnet.bybit.com/) (separate market data and accounts) instead, set:
+
+```
+"bybit-api-url": "https://api-testnet.bybit.com",
+"bybit-websocket-url": "wss://stream-testnet.bybit.com"
+```
+
 ## Account Types
 
 Bybit supports cash and margin accounts.

@@ -242,7 +242,12 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
         ValidateSubscription();
 
         _privateWebSocketUrl = $"{baseWssUrl}/v5/private";
-        var basePublicWebSocketUrl = $"{baseWssUrl}/v5/public";
+        // Bybit demo trading exposes only private/trading endpoints and reuses mainnet for public market data.
+        // See https://bybit-exchange.github.io/docs/v5/demo
+        var publicWssUrl = baseWssUrl.Contains("-demo", StringComparison.OrdinalIgnoreCase)
+            ? "wss://stream.bybit.com"
+            : baseWssUrl;
+        var basePublicWebSocketUrl = $"{publicWssUrl}/v5/public";
 
         Initialize(_privateWebSocketUrl, new BybitWebSocketWrapper(), httpClient: null, apiKey, apiSecret);
 
