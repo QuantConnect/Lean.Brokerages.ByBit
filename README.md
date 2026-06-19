@@ -21,7 +21,7 @@ This repository hosts the Bybit Brokerage Plugin Integration with the QuantConne
 
 [Bybit](https://www.bybit.com/) was founded by Ben Zhou in 2018. Bybit provides access to trading Crypto through spot markets and perpetual Futures. They serve clients with no minimum deposit when depositing Crypto. Bybit offers defi-related crypto services such as project launchpad initial coin offerings, yield farming, and recently NFT minting and curation.
 
-For more information about the Bybit brokerage, see the [QuantConnect-Bybit Integration Page](https://www.quantconnect.com/docs/v2/our-platform/live-trading/brokerages/bybit).
+For more information about the Bybit brokerage, see the [QuantConnect-Bybit Integration Page](https://www.quantconnect.com/docs/v2/cloud-platform/live-trading/brokerages/bybit).
 
 ## Using the Brokerage Plugin
   
@@ -37,7 +37,7 @@ For more information about the Bybit brokerage, see the [QuantConnect-Bybit Inte
 
 Follow these steps to start local live trading with the Bybit brokerage:
 
-1.  Open a terminal in your [CLI root directory](https://www.quantconnect.com/docs/v2/lean-cli/initialization/directory-structure#02-lean-init).
+1.  Open a terminal in your [CLI root directory](https://www.quantconnect.com/docs/v2/lean-cli/initialization/organization-workspaces#03-Directory-Structure).
 2.  Run lean live "`<projectName>`" to start a live deployment wizard for the project in ./`<projectName>` and then enter the brokerage number.
 
     ```
@@ -179,7 +179,7 @@ You can set the Brokerage Model with the following statements
     SetBrokerageModel(BrokerageName.Bybit, AccountType.Cash);
     SetBrokerageModel(BrokerageName.Bybit, AccountType.Margin);
 
-[Read Documentation](https://www.quantconnect.com/docs/v2/our-platform/live-trading/brokerages/bybit)
+[Read Documentation](https://www.quantconnect.com/docs/v2/cloud-platform/live-trading/brokerages/bybit)
 
 ### Fees
 
