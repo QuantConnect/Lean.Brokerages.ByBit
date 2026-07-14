@@ -48,10 +48,13 @@ public class BybitPositionApiEndpoint : BybitApiEndpoint
     {
         if (category == BybitProductCategory.Spot) return Array.Empty<BybitPositionInfo>();
 
-        var parameters = new KeyValuePair<string, string>[]
+        var parameters = new List<KeyValuePair<string, string>>();
+        
+        if (category == BybitProductCategory.Linear)
         {
-            new("settleCoin", "USDT")
-        };
+            parameters.Add(KeyValuePair.Create("settleCoin", "USDT"));
+        }
+
         return FetchAll<BybitPositionInfo>("/position/list", category, 200, parameters, true);
     }
 }

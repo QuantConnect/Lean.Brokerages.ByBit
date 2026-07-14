@@ -43,7 +43,7 @@ public partial class BybitBrokerage
     public override List<Order> GetOpenOrders()
     {
         var orders = new List<Order>();
-        foreach (var category in SupportedBybitProductCategories)
+        foreach (var category in GetWorkingProductCategories(_algorithm.BrokerageName))
         {
                 orders.AddRange(ApiClient.Trade.GetOpenOrders(category)
                     .Select(bybitOrder =>
@@ -98,7 +98,7 @@ public partial class BybitBrokerage
     public override List<Holding> GetAccountHoldings()
     {
         var holdings = new List<Holding>();
-        foreach (var category in SupportedBybitProductCategories)
+        foreach (var category in GetWorkingProductCategories(_algorithm.BrokerageName))
         {
             holdings.AddRange(ApiClient.Position.GetPositions(category)
                 .Select(bybitPosition => new Holding
@@ -121,9 +121,13 @@ public partial class BybitBrokerage
     /// <returns>The current cash balance for each currency available for trading</returns>
     public override List<CashAmount> GetCashBalance()
     {
-        return ApiClient.Account
-            .GetWalletBalances().Assets
-            .Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
+        var balances = ApiClient.Account.GetWalletBalances();
+        if (GetWorkingProductCategories(_algorithm.BrokerageName).Contains(BybitProductCategory.Inverse))
+        {
+            return [new CashAmount(balances.TotalAvailableBalance ?? 0, "USD")];
+        }
+
+        return balances.Assets.Select(x => new CashAmount(x.WalletBalance, x.Asset)).ToList();
     }
 
     /// <summary>

@@ -21,6 +21,7 @@ using NUnit.Framework;
 using QuantConnect.Brokerages.Bybit.Api;
 using QuantConnect.Brokerages.Bybit.Models.Enums;
 using QuantConnect.Configuration;
+using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Logging;
@@ -62,8 +63,16 @@ namespace QuantConnect.Brokerages.Bybit.Tests
             var websocketUrl = Config.Get("bybit-websocket-url", "wss://stream-testnet.bybit.com");
 
             _client = CreateRestApiClient(apiKey, apiSecret, apiUrl);
-            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider,
-                securityProvider, new AggregationManager(), null);
+
+            return CreateBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm.Object, orderProvider, securityProvider, new AggregationManager());
+        }
+
+        protected virtual IBrokerage CreateBrokerage(string apiKey, string apiSecret, string apiUrl,
+            string websocketUrl, IAlgorithm algorithm, IOrderProvider orderProvider, ISecurityProvider securityProvider,
+            IDataAggregator aggregator)
+        {
+            return new BybitBrokerage(apiKey, apiSecret, apiUrl, websocketUrl, algorithm, orderProvider, securityProvider, new AggregationManager(), null);
+
         }
 
         protected virtual decimal TakerFee => BybitFeeModel.TakerNonVIPFee;

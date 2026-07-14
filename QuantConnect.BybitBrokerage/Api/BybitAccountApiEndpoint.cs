@@ -40,7 +40,6 @@ public class BybitAccountApiEndpoint : BybitApiEndpoint
     /// <summary>
     /// Obtain wallet balance, query asset information of each currency, and account risk rate information
     /// </summary>
-    /// <param name="category">The product category</param>
     /// <returns>The wallet balances</returns>
     public BybitBalance GetWalletBalances()
     {
