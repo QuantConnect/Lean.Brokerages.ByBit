@@ -31,6 +31,7 @@ using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
+using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Logging;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
@@ -303,6 +304,8 @@ public partial class BybitBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
                 return client;
             });
         }
+
+        DeploymentDetailsHelper.Add("bybit-vip-level", vipLevel.ToStringInvariant());
     }
 
     private Dictionary<Symbol, int> FetchSymbolWeights(BybitApi client, BybitProductCategory category)
