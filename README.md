@@ -27,7 +27,7 @@ For more information about the Bybit brokerage, see the [QuantConnect-Bybit Inte
   
 ### Deploying Bybit with Local Platform
 
-  You can deploy using the Local Plartform in the QuantConnect Cloud. For more information see the [QuantConnect-Bybit Integration Page](https://www.quantconnect.com/brokerages/bybit).
+  You can deploy using the Local Plartform in the QuantConnect Cloud. For more information see the [QuantConnect-Bybit Integration Page](https://www.quantconnect.com/docs/v2/cloud-platform/live-trading/brokerages/bybit).
 
 ![deploy-bybit](https://github.com/QuantConnect/Lean.Brokerages.ByBit/assets/6889033/5554fa68-d6c2-4cb2-9c78-b3342d908a6b)
 
@@ -187,7 +187,7 @@ You can set the Brokerage Model with the following statements
 
 ### Fees
 
-We model the order fees of Bybit at the non-VIP level, which is a 0.1% maker and taker fee for spot and 0.02% maker and 0.055% taker fee. If you add liquidity to the order book by placing a limit order that doesn't cross the spread, you pay maker fees. If you remove liquidity from the order book by placing an order that crosses the spread, you pay taker fees. To check the latest fees at all the fee levels, see the [Bybit Trading Fees](https://www.bybit.com/en/announcement-info/fee-rate/) page on the Bybit.com website. The Bybit Spot Test Network does not charge order fees.
+We model the order fees of Bybit at the non-VIP level, which is a 0.1% maker and taker fee for spot and 0.02% maker and 0.055% taker fee. If you add liquidity to the order book by placing a limit order that doesn't cross the spread, you pay maker fees. If you remove liquidity from the order book by placing an order that crosses the spread, you pay taker fees. To check the latest fees at all the fee levels, see the [Bybit Trading Fees](https://www.bybit.com/en/help-center/article/Trading-Fee-Structure) page on the Bybit.com website. The Bybit Spot Test Network does not charge order fees.
 
 ### Margin
 
